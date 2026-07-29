@@ -8,9 +8,9 @@ CozyStay is a web app that lets everyday property owners list their spare rooms,
 
 ## 2. Users
 
-- **Maria, the Host (32, moderate tech skill)** — Owns a spare apartment she wants to rent out on weekends she's away. Wants an easy way to list it with photos and price, and to see who wants to book without a lot of back-and-forth.
-- **Jake, the Guest (24, tech-savvy)** — Traveling for a friend's wedding, wants to quickly compare a few properties by price and location and book one that fits his dates.
-- **Admin/Moderator (internal, tech-savvy)** — Needs to review flagged listings and remove ones that violate rules (fake, offensive, duplicate).
+- **Maria, the Host** — Owns a spare apartment she wants to rent out on weekends she's away. Wants an easy way to list it with photos and price, and to see who wants to book without a lot of back-and-forth.
+- **Jake, the Guest** — Traveling for a friend's wedding, wants to quickly compare a few properties by price and location and book one that fits his dates.
+- **Admin** — Needs to review flagged listings and remove ones that violate rules (fake, offensive, duplicate).
 
 ## 3. User Stories
 
