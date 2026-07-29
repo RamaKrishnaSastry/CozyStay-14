@@ -143,7 +143,7 @@ Reviews & ratings, amenity filters, host-managed availability calendar, in-app m
 - **Host Dashboard** — host's own listings + incoming booking requests with accept/decline buttons
 - **Create/Edit Listing** — form for title, description, price, location, photo upload
 
-*(Attach whiteboard photos or Figma link here)*
+
 
 ## 6. Data & Rules
 
