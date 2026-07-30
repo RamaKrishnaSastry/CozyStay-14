@@ -17,6 +17,8 @@ def create_app():
     jwt.init_app(app)
     CORS(app)
 
+    from app.models import User, Property, Booking, Review
+
     from app.routes.auth import auth_bp
     from app.routes.properties import properties_bp
     from app.routes.bookings import bookings_bp
