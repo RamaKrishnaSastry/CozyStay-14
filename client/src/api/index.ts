@@ -30,6 +30,8 @@ export const authApi = {
   login: (data: { email: string; password: string }) =>
     api.post<AuthResponse>('/auth/login', data).then(r => r.data),
   getMe: () => api.get<{ user: User }>('/auth/me').then(r => r.data.user),
+  googleLogin: (credential: string) =>
+    api.post<AuthResponse>('/auth/google', { credential }).then(r => r.data),
 };
 
 export const propertyApi = {
@@ -43,7 +45,7 @@ export const propertyApi = {
 };
 
 export const bookingApi = {
-  create: (data: { propertyId: string; startDate: string; endDate: string }) =>
+  create: (data: { property_id: number; start_date: string; end_date: string }) =>
     api.post<Booking>('/bookings', data).then(r => r.data),
   getMy: () => api.get<Booking[]>('/bookings/my').then(r => r.data),
   getRequests: () => api.get<Booking[]>('/bookings/requests').then(r => r.data),
@@ -59,7 +61,7 @@ export const userApi = {
 };
 
 export const adminApi = {
-  getStats: () => api.get<{ totalUsers: number; totalActiveListings: number; totalBookings: number }>('/admin/stats').then(r => r.data),
+  getStats: () => api.get<{ total_users: number; total_active_listings: number; total_bookings: number }>('/admin/stats').then(r => r.data),
   getListings: () => api.get<Property[]>('/admin/listings').then(r => r.data),
   getBookings: () => api.get<Booking[]>('/admin/bookings').then(r => r.data),
   deleteListing: (id: string) => api.delete(`/admin/listings/${id}`).then(r => r.data),

@@ -13,7 +13,7 @@ export default function Home() {
     setLoading(true);
     const params: any = {};
     if (location) params.location = location;
-    if (maxPrice) params.maxPrice = Number(maxPrice);
+    if (maxPrice) params.max_price = Number(maxPrice);
     propertyApi.getAll(params)
       .then(setProperties)
       .finally(() => setLoading(false));
@@ -42,7 +42,7 @@ export default function Home() {
         <div className="empty">No listings found. Try different filters or check back later.</div>
       ) : (
         <div className="property-grid">
-          {properties.map((p) => <PropertyCard key={p._id} property={p} />)}
+          {properties.map((p) => <PropertyCard key={p.id} property={p} />)}
         </div>
       )}
     </div>

@@ -16,7 +16,7 @@ export default function HostDashboard() {
       propertyApi.getAll(),
       bookingApi.getRequests(),
     ]).then(([props, reqs]) => {
-      setListings(props.filter((p) => (p.host as any)._id === user!.id || p.host === user!.id));
+      setListings(props.filter((p) => p.host_id === Number(user!.id)));
       setRequests(reqs);
     }).finally(() => setLoading(false));
   };
@@ -48,11 +48,11 @@ export default function HostDashboard() {
       {listings.length === 0 ? <div className="empty">You have no listings yet.</div> : (
         <div className="listing-list">
           {listings.map((p) => (
-            <div key={p._id} className="listing-row">
-              <Link to={`/listings/${p._id}`}>{p.title}</Link>
-              <span>${p.pricePerNight}/night</span>
-              <Link to={`/listings/${p._id}/edit`} className="btn-sm">Edit</Link>
-              <button onClick={() => handleDelete(p._id)} className="btn-sm btn-danger">Delete</button>
+            <div key={p.id} className="listing-row">
+              <Link to={`/listings/${p.id}`}>{p.title}</Link>
+              <span>${p.price_per_night}/night</span>
+              <Link to={`/listings/${p.id}/edit`} className="btn-sm">Edit</Link>
+              <button onClick={() => handleDelete(String(p.id))} className="btn-sm btn-danger">Delete</button>
             </div>
           ))}
         </div>
@@ -62,14 +62,14 @@ export default function HostDashboard() {
       {requests.length === 0 ? <div className="empty">No booking requests yet.</div> : (
         <div className="request-list">
           {requests.map((r) => (
-            <div key={r._id} className={`request-card status-${r.status}`}>
+            <div key={r.id} className={`request-card status-${r.status}`}>
               <p><strong>{r.guest?.name}</strong> requested <strong>{(r.property as any)?.title}</strong></p>
-              <p>{new Date(r.startDate).toLocaleDateString()} — {new Date(r.endDate).toLocaleDateString()}</p>
+              <p>{new Date(r.start_date).toLocaleDateString()} — {new Date(r.end_date).toLocaleDateString()}</p>
               <p>Status: {r.status}</p>
               {r.status === 'pending' && (
                 <div className="request-actions">
-                  <button onClick={() => handleRespond(r._id, 'confirmed')} className="btn-sm btn-success">Accept</button>
-                  <button onClick={() => handleRespond(r._id, 'declined')} className="btn-sm btn-danger">Decline</button>
+                  <button onClick={() => handleRespond(String(r.id), 'confirmed')} className="btn-sm btn-success">Accept</button>
+                  <button onClick={() => handleRespond(String(r.id), 'declined')} className="btn-sm btn-danger">Decline</button>
                 </div>
               )}
             </div>
