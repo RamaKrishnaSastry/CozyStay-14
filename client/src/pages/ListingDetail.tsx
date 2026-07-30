@@ -27,7 +27,7 @@ export default function ListingDetail() {
     setBookingError('');
     setBookingSuccess('');
     try {
-      await bookingApi.create({ propertyId: id!, startDate, endDate });
+      await bookingApi.create({ property_id: Number(id!), start_date: startDate, end_date: endDate });
       setBookingSuccess('Booking request sent!');
       setStartDate('');
       setEndDate('');
@@ -42,12 +42,16 @@ export default function ListingDetail() {
   return (
     <div className="page listing-detail">
       <div className="listing-gallery">
-        {property.photos.map((photo, i) => <img key={i} src={photo} alt={`${property.title} ${i + 1}`} />)}
+        {property.photos.map((photo, i) => (
+          <img key={i} src={photo} alt={`${property.title} ${i + 1}`}
+            onError={(e) => { (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="800" height="500" fill="%23eee"%3E%3Crect width="800" height="500"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" fill="%23999" font-size="20"%3EImage not available%3C/text%3E%3C/svg%3E'; }}
+          />
+        ))}
       </div>
       <h1>{property.title}</h1>
       <p className="listing-location">{property.location}</p>
-      <p className="listing-price">${property.pricePerNight} / night</p>
-      <p className="listing-host">Hosted by {property.host?.name}</p>
+      <p className="listing-price">${property.price_per_night} / night</p>
+      <p className="listing-host">Hosted by {property.host_name}</p>
       <p>{property.description}</p>
 
       {user && user.role === 'guest' && (

@@ -42,13 +42,13 @@ export default function AdminDashboard() {
   const handleDeleteListing = async (id: string) => {
     if (!confirm('Deactivate this listing?')) return;
     await adminApi.deleteListing(id);
-    setListings(listings.map(l => l._id === id ? { ...l, isActive: false } : l));
+    setListings(listings.map(l => l.id === Number(id) ? { ...l, is_active: false } : l));
   };
 
   const handleDeleteBooking = async (id: string) => {
     if (!confirm('Delete this booking?')) return;
     await adminApi.deleteBooking(id);
-    setBookings(bookings.filter(b => b._id !== id));
+    setBookings(bookings.filter(b => b.id !== Number(id)));
   };
 
   return (
@@ -66,9 +66,9 @@ export default function AdminDashboard() {
 
       {tab === 'stats' && stats && (
         <div className="stats-grid">
-          <div className="stat-card"><h3>Users</h3><p>{stats.totalUsers}</p></div>
-          <div className="stat-card"><h3>Active Listings</h3><p>{stats.totalActiveListings}</p></div>
-          <div className="stat-card"><h3>Bookings</h3><p>{stats.totalBookings}</p></div>
+          <div className="stat-card"><h3>Users</h3><p>{stats.total_users}</p></div>
+          <div className="stat-card"><h3>Active Listings</h3><p>{stats.total_active_listings}</p></div>
+          <div className="stat-card"><h3>Bookings</h3><p>{stats.total_bookings}</p></div>
         </div>
       )}
 
@@ -109,9 +109,9 @@ export default function AdminDashboard() {
           <thead><tr><th>Title</th><th>Host</th><th>Price</th><th>Active</th><th>Actions</th></tr></thead>
           <tbody>
             {listings.map(l => (
-              <tr key={l._id}>
-                <td>{l.title}</td><td>{(l.host as any)?.name}</td><td>${l.pricePerNight}</td><td>{l.isActive ? 'Yes' : 'No'}</td>
-                <td>{l.isActive && <button onClick={() => handleDeleteListing(l._id)} className="btn-sm btn-danger">Deactivate</button>}</td>
+              <tr key={l.id}>
+                <td>{l.title}</td><td>{l.host_name}</td><td>${l.price_per_night}</td><td>{l.is_active ? 'Yes' : 'No'}</td>
+                <td>{l.is_active && <button onClick={() => handleDeleteListing(String(l.id))} className="btn-sm btn-danger">Deactivate</button>}</td>
               </tr>
             ))}
           </tbody>
@@ -123,11 +123,11 @@ export default function AdminDashboard() {
           <thead><tr><th>Property</th><th>Guest</th><th>Dates</th><th>Status</th><th>Actions</th></tr></thead>
           <tbody>
             {bookings.map(b => (
-              <tr key={b._id}>
+              <tr key={b.id}>
                 <td>{(b.property as any)?.title}</td><td>{b.guest?.name}</td>
-                <td>{new Date(b.startDate).toLocaleDateString()} — {new Date(b.endDate).toLocaleDateString()}</td>
+                <td>{new Date(b.start_date).toLocaleDateString()} — {new Date(b.end_date).toLocaleDateString()}</td>
                 <td>{b.status}</td>
-                <td><button onClick={() => handleDeleteBooking(b._id)} className="btn-sm btn-danger">Delete</button></td>
+                <td><button onClick={() => handleDeleteBooking(String(b.id))} className="btn-sm btn-danger">Delete</button></td>
               </tr>
             ))}
           </tbody>

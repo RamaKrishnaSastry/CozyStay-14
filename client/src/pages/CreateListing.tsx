@@ -2,6 +2,24 @@ import { useState, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { propertyApi } from '../api';
 
+function PhotoPreview({ urls }: { urls: string[] }) {
+  const [errored, setErrored] = useState<Set<number>>(new Set());
+  if (urls.length === 0) return null;
+  return (
+    <div className="photo-preview-grid">
+      {urls.map((url, i) => (
+        <div key={i} className="photo-preview-item">
+          {errored.has(i) ? (
+            <div className="photo-preview-fallback">Invalid URL</div>
+          ) : (
+            <img src={url} alt={`Preview ${i + 1}`} onError={() => setErrored(s => new Set(s).add(i))} />
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function CreateListing() {
   const navigate = useNavigate();
   const [title, setTitle] = useState('');
@@ -11,6 +29,8 @@ export default function CreateListing() {
   const [photos, setPhotos] = useState('');
   const [error, setError] = useState('');
 
+  const photoUrls = photos.split('\n').map(s => s.trim()).filter(Boolean);
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
@@ -18,11 +38,11 @@ export default function CreateListing() {
       const property = await propertyApi.create({
         title,
         description,
-        pricePerNight: Number(pricePerNight),
+        price_per_night: Number(pricePerNight),
         location,
-        photos: photos.split('\n').map(s => s.trim()).filter(Boolean),
+        photos: photoUrls,
       });
-      navigate(`/listings/${property._id}`);
+      navigate(`/listings/${property.id}`);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to create listing');
     }
@@ -38,6 +58,7 @@ export default function CreateListing() {
         <input type="number" placeholder="Price per night ($)" value={pricePerNight} onChange={(e) => setPricePerNight(e.target.value)} required min={0} />
         <input type="text" placeholder="Location" value={location} onChange={(e) => setLocation(e.target.value)} required />
         <textarea placeholder="Photo URLs (one per line)" value={photos} onChange={(e) => setPhotos(e.target.value)} required />
+        <PhotoPreview urls={photoUrls} />
         <button type="submit">Create Listing</button>
       </form>
     </div>

@@ -1,4 +1,5 @@
 import { Routes, Route } from 'react-router-dom';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
 import Home from './pages/Home';
@@ -12,9 +13,11 @@ import HostDashboard from './pages/HostDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import NotFound from './pages/NotFound';
 
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
+
 export default function App() {
   return (
-    <>
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
       <Navbar />
       <main className="container">
         <Routes>
@@ -40,6 +43,6 @@ export default function App() {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
-    </>
+    </GoogleOAuthProvider>
   );
 }
