@@ -1,20 +1,30 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Box from '@mui/material/Box';
+import CircularProgress from '@mui/material/CircularProgress';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
 import AppTour from './components/AppTour';
-import Home from './pages/Home';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import ListingDetail from './pages/ListingDetail';
-import CreateListing from './pages/CreateListing';
-import EditListing from './pages/EditListing';
-import MyBookings from './pages/MyBookings';
-import HostDashboard from './pages/HostDashboard';
-import AdminDashboard from './pages/AdminDashboard';
-import NotFound from './pages/NotFound';
+
+const Home = lazy(() => import('./pages/Home'));
+const Login = lazy(() => import('./pages/Login'));
+const Register = lazy(() => import('./pages/Register'));
+const ListingDetail = lazy(() => import('./pages/ListingDetail'));
+const CreateListing = lazy(() => import('./pages/CreateListing'));
+const EditListing = lazy(() => import('./pages/EditListing'));
+const MyBookings = lazy(() => import('./pages/MyBookings'));
+const HostDashboard = lazy(() => import('./pages/HostDashboard'));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const Messages = lazy(() => import('./pages/Messages'));
+const Profile = lazy(() => import('./pages/Profile'));
+const NotFound = lazy(() => import('./pages/NotFound'));
+
+const PageLoader = () => (
+  <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+    <CircularProgress />
+  </Box>
+);
 
 export default function App() {
   const [tourOpen, setTourOpen] = useState(false);
@@ -32,26 +42,29 @@ export default function App() {
       <Navbar onStartTour={() => setTourOpen(true)} />
       <Box component="main" sx={{ flex: 1, pt: { xs: 7, sm: 8 } }}>
         <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/listings/:id" element={<ListingDetail />} />
+          <Route path="/" element={<Suspense fallback={<PageLoader />}><Home /></Suspense>} />
+          <Route path="/login" element={<Suspense fallback={<PageLoader />}><Login /></Suspense>} />
+          <Route path="/register" element={<Suspense fallback={<PageLoader />}><Register /></Suspense>} />
+          <Route path="/listings/:id" element={<Suspense fallback={<PageLoader />}><ListingDetail /></Suspense>} />
 
           <Route element={<ProtectedRoute />}>
-            <Route path="/listings/new" element={<CreateListing />} />
-            <Route path="/listings/:id/edit" element={<EditListing />} />
-            <Route path="/my-bookings" element={<MyBookings />} />
+            <Route path="/listings/new" element={<Suspense fallback={<PageLoader />}><CreateListing /></Suspense>} />
+            <Route path="/listings/:id/edit" element={<Suspense fallback={<PageLoader />}><EditListing /></Suspense>} />
+            <Route path="/my-bookings" element={<Suspense fallback={<PageLoader />}><MyBookings /></Suspense>} />
+            <Route path="/messages" element={<Suspense fallback={<PageLoader />}><Messages /></Suspense>} />
+            <Route path="/messages/:id" element={<Suspense fallback={<PageLoader />}><Messages /></Suspense>} />
+            <Route path="/profile" element={<Suspense fallback={<PageLoader />}><Profile /></Suspense>} />
           </Route>
 
           <Route element={<ProtectedRoute allowedRoles={['host']} />}>
-            <Route path="/host/dashboard" element={<HostDashboard />} />
+            <Route path="/host/dashboard" element={<Suspense fallback={<PageLoader />}><HostDashboard /></Suspense>} />
           </Route>
 
           <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
-            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin" element={<Suspense fallback={<PageLoader />}><AdminDashboard /></Suspense>} />
           </Route>
 
-          <Route path="*" element={<NotFound />} />
+          <Route path="*" element={<Suspense fallback={<PageLoader />}><NotFound /></Suspense>} />
         </Routes>
       </Box>
       <Footer />

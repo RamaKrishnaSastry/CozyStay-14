@@ -1,78 +1,78 @@
 import { useState, useEffect } from 'react';
 import {
   Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, Box,
-  MobileStepper, IconButton, Fade, Slide,
+  MobileStepper, IconButton, Fade,
 } from '@mui/material';
 import {
-  KeyboardArrowLeft, KeyboardArrowRight, Close, HomeOutlined,
-  SearchOutlined, CardTravelOutlined, BookOnlineOutlined,
-  DashboardOutlined, AdminPanelSettingsOutlined, DarkModeOutlined,
-  ExploreOutlined, StarBorderOutlined,
+  KeyboardArrowLeft, KeyboardArrowRight, Close,
 } from '@mui/icons-material';
 
 const tourSteps = [
   {
-    icon: <HomeOutlined sx={{ fontSize: 48, color: '#FF385C' }} />,
     title: 'Welcome to CozyStay',
-    description: 'Your gateway to unique stays across India. Browse hundreds of curated properties — from beachfront villas to mountain cabins.',
-    highlight: 'hero',
+    description: 'Your gateway to unique stays across India. Browse hundreds of curated properties — from beachfront villas in Goa to mountain cabins in Manali and heritage havelis in Jaipur.',
+    image: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=600&h=350&fit=crop',
     color: '#FF385C',
   },
   {
-    icon: <SearchOutlined sx={{ fontSize: 48, color: '#FF385C' }} />,
-    title: 'Search & Filter',
-    description: 'Find your perfect stay by location or budget. Use the search bar to filter by destination and the price slider to set your nightly budget.',
-    highlight: 'search',
+    title: 'AI-Powered Natural Search',
+    description: 'Describe your ideal stay in plain English! Type something like "beach house in Goa under $200 with pool" and our AI will find matching properties instantly. No more fiddling with filters.',
+    image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=600&h=350&fit=crop',
     color: '#E8583C',
   },
   {
-    icon: <CardTravelOutlined sx={{ fontSize: 48, color: '#FF385C' }} />,
-    title: 'Browse Listings',
-    description: 'Each card shows photos, price, rating, location, and key amenities at a glance. Click any listing to explore details.',
-    highlight: 'grid',
+    title: 'Search & Filter by Amenities',
+    description: 'Use manual search by location or price, or expand the amenity filters to narrow down by WiFi, pool, pet-friendly, and more. Filter chips show your active selections at a glance.',
+    image: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=600&h=350&fit=crop',
     color: '#CC6B3C',
   },
   {
-    icon: <ExploreOutlined sx={{ fontSize: 48, color: '#FF385C' }} />,
-    title: 'Listing Details',
-    description: 'View photo galleries, read full descriptions, check amenities with icons, see host info, and book your stay with the date picker.',
-    highlight: 'detail',
+    title: 'Browse Beautiful Listings',
+    description: 'Each card shows a hero photo, title, nightly price, location, guest rating, and key amenity chips. Hover for a subtle lift effect. Click any card to dive into full details.',
+    image: 'https://images.unsplash.com/photo-1600586153345-890d3f3b8bd5?w=600&h=350&fit=crop',
     color: '#B0783C',
   },
   {
-    icon: <StarBorderOutlined sx={{ fontSize: 48, color: '#FF385C' }} />,
-    title: 'Reviews & Ratings',
-    description: 'Read authentic guest reviews with ratings before booking. See what other travelers loved about each property.',
-    highlight: 'reviews',
+    title: 'Listing Details & Gallery',
+    description: 'Explore photo galleries with thumbnail navigation. Read full descriptions, check amenities with icons, see host profile, and view the price breakdown for your dates.',
+    image: 'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=600&h=350&fit=crop',
     color: '#E8583C',
   },
   {
-    icon: <BookOnlineOutlined sx={{ fontSize: 48, color: '#FF385C' }} />,
-    title: 'Booking Flow',
-    description: 'Request a booking with your dates. Hosts can accept or decline. Track all your bookings — pending, confirmed, or declined — from your account.',
-    highlight: 'booking',
+    title: 'Reviews & Ratings',
+    description: 'Read authentic guest reviews with star ratings before booking. Each review shows the guest name, rating, date, and detailed feedback. See average rating and total review count at a glance.',
+    image: 'https://images.unsplash.com/photo-1600585152915-d208bec867a1?w=600&h=350&fit=crop',
     color: '#FF385C',
   },
   {
-    icon: <DashboardOutlined sx={{ fontSize: 48, color: '#FF385C' }} />,
-    title: 'Host Dashboard',
-    description: 'Hosts can manage their listings, edit details, delete properties, and respond to booking requests — all from one dashboard.',
-    highlight: 'host',
+    title: 'Booking with Date Picker',
+    description: 'Select check-in and check-out dates using the date inputs. See a live price breakdown with total cost before you request. Overlap protection prevents double-booking on confirmed dates.',
+    image: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=600&h=350&fit=crop',
     color: '#3C8CFF',
   },
   {
-    icon: <AdminPanelSettingsOutlined sx={{ fontSize: 48, color: '#FF385C' }} />,
-    title: 'Admin Panel',
-    description: 'Admins oversee everything: manage users, deactivate listings, and delete bookings. Stats overview shows platform health at a glance.',
-    highlight: 'admin',
+    title: 'Host Dashboard',
+    description: 'Hosts can manage all properties from one place: edit listings, delete with confirmation, and respond to booking requests by accepting or declining with a single click.',
+    image: 'https://images.unsplash.com/photo-1600585153490-76fb20a32601?w=600&h=350&fit=crop',
+    color: '#2C9C5F',
+  },
+  {
+    title: 'In-App Messaging',
+    description: 'Guests and hosts can communicate directly about bookings, ask questions about properties, and coordinate check-in details — all within the app.',
+    image: 'https://images.unsplash.com/photo-1600595956484-37d4e6e30b87?w=600&h=350&fit=crop',
     color: '#6C3CFF',
   },
   {
-    icon: <DarkModeOutlined sx={{ fontSize: 48, color: '#FF385C' }} />,
-    title: 'Dark Mode & More',
-    description: 'Toggle between light and dark themes using the moon/sun icon in the navbar. The app remembers your preference.',
-    highlight: 'theme',
+    title: 'Admin Panel',
+    description: 'Admins oversee the entire platform: view stats (users, listings, bookings), manage users with inline editing, deactivate listings, and delete problematic bookings.',
+    image: 'https://images.unsplash.com/photo-1600573472550-8090b5e0745e?w=600&h=350&fit=crop',
     color: '#222',
+  },
+  {
+    title: 'Dark Mode',
+    description: 'Toggle between light and dark themes anytime using the moon/sun icon. Your preference is saved for next visit. All MUI components adapt seamlessly to the chosen theme.',
+    image: 'https://images.unsplash.com/photo-1600586153345-890d3f3b8bd5?w=600&h=350&fit=crop',
+    color: '#121212',
   },
 ];
 
@@ -82,47 +82,24 @@ interface Props {
   onComplete: () => void;
 }
 
-function SlideTransition(props: any) {
-  return <Slide direction="up" {...props} />;
-}
-
 export default function AppTour({ open, onClose, onComplete }: Props) {
   const [step, setStep] = useState(0);
   const [enter, setEnter] = useState(true);
   const maxSteps = tourSteps.length;
 
   useEffect(() => {
-    if (!open) {
-      setStep(0);
-      setEnter(true);
-    }
+    if (!open) { setStep(0); setEnter(true); }
   }, [open]);
 
-  const handleNext = () => {
+  const animate = (dir: 'next' | 'back') => {
     setEnter(false);
     setTimeout(() => {
-      if (step < maxSteps - 1) {
-        setStep(step + 1);
-        setEnter(true);
-      }
+      if (dir === 'next' && step < maxSteps - 1) { setStep(step + 1); setEnter(true); }
+      if (dir === 'back' && step > 0) { setStep(step - 1); setEnter(true); }
     }, 200);
   };
 
-  const handleBack = () => {
-    setEnter(false);
-    setTimeout(() => {
-      if (step > 0) {
-        setStep(step - 1);
-        setEnter(true);
-      }
-    }, 200);
-  };
-
-  const handleClose = () => {
-    onComplete();
-    onClose();
-  };
-
+  const handleClose = () => { onComplete(); onClose(); };
   const current = tourSteps[step];
 
   return (
@@ -131,71 +108,45 @@ export default function AppTour({ open, onClose, onComplete }: Props) {
       onClose={handleClose}
       maxWidth="sm"
       fullWidth
-      slots={{ transition: SlideTransition }}
       slotProps={{
-        paper: {
-          sx: {
-            borderRadius: 4,
-            overflow: 'hidden',
-            maxWidth: 480,
-          },
-        },
+        paper: { sx: { borderRadius: 3, overflow: 'hidden', maxWidth: 520, bgcolor: 'background.paper' } },
       }}
     >
-      <Box
-        sx={{
-          position: 'relative',
-          pt: 4,
-          pb: 2,
-          px: 3,
-          textAlign: 'center',
-          background: (theme) =>
-            theme.palette.mode === 'dark'
-              ? 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)'
-              : `linear-gradient(135deg, ${current.color}15 0%, ${current.color}05 100%)`,
-        }}
-      >
-        <IconButton
-          onClick={handleClose}
-          sx={{ position: 'absolute', top: 8, right: 8, color: 'text.secondary' }}
-          size="small"
-        >
-          <Close />
-        </IconButton>
-        <Fade in={enter} timeout={400}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-            <Box
-              sx={{
-                p: 2,
-                borderRadius: '50%',
-                bgcolor: (theme) =>
-                  theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : `${current.color}15`,
-                mb: 1,
-                animation: enter ? 'pulse 1.5s infinite' : 'none',
-                '@keyframes pulse': {
-                  '0%': { transform: 'scale(1)' },
-                  '50%': { transform: 'scale(1.08)' },
-                  '100%': { transform: 'scale(1)' },
-                },
-              }}
-            >
-              {current.icon}
-            </Box>
-            <Typography variant="h5" sx={{ fontWeight: 700 }}>
-              {current.title}
-            </Typography>
-            <Typography
-              variant="body1"
-              color="text.secondary"
-              sx={{ maxWidth: 380, lineHeight: 1.6 }}
-            >
-              {current.description}
-            </Typography>
-          </Box>
+      <IconButton onClick={handleClose} sx={{ position: 'absolute', top: 8, right: 8, zIndex: 2, color: '#fff', bgcolor: 'rgba(0,0,0,0.3)', '&:hover': { bgcolor: 'rgba(0,0,0,0.5)' } }} size="small">
+        <Close fontSize="small" />
+      </IconButton>
+
+      <Box sx={{ position: 'relative', width: '100%', height: 220, overflow: 'hidden' }}>
+        <Fade in={enter} timeout={500}>
+          <Box
+            component="img"
+            src={current.image}
+            alt={current.title}
+            sx={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+          />
         </Fade>
+        <Box
+          sx={{
+            position: 'absolute', bottom: 0, left: 0, right: 0,
+            background: 'linear-gradient(transparent, rgba(0,0,0,0.7))',
+            p: 2,
+          }}
+        >
+          <Typography variant="h6" sx={{ fontWeight: 700, color: '#fff' }}>
+            {current.title}
+          </Typography>
+        </Box>
       </Box>
 
-      <Box sx={{ px: 3, py: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
+      <DialogContent sx={{ py: 2.5, px: 3 }}>
+        <Fade in={enter} timeout={500}>
+          <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.7 }}>
+            {current.description}
+          </Typography>
+        </Fade>
+      </DialogContent>
+
+      <Box sx={{ px: 3, pb: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Typography variant="caption" color="text.secondary">
           {step + 1} of {maxSteps}
         </Typography>
@@ -204,45 +155,26 @@ export default function AppTour({ open, onClose, onComplete }: Props) {
           steps={maxSteps}
           position="static"
           activeStep={step}
-          sx={{
-            flex: 1,
-            maxWidth: 200,
-            bgcolor: 'transparent',
-            '& .MuiMobileStepper-dot': { mx: 0.3 },
-            '& .MuiMobileStepper-dotActive': { bgcolor: 'primary.main' },
-          }}
+          sx={{ flex: 1, maxWidth: 240, bgcolor: 'transparent', '& .MuiMobileStepper-dot': { mx: 0.3 }, '& .MuiMobileStepper-dotActive': { bgcolor: 'primary.main' } }}
           nextButton={<span />}
           backButton={<span />}
         />
       </Box>
 
       <DialogActions sx={{ px: 3, pb: 3, justifyContent: 'space-between' }}>
-        <Button
-          size="small"
-          onClick={handleBack}
-          disabled={step === 0}
-          startIcon={<KeyboardArrowLeft />}
-        >
+        <Button size="small" onClick={() => animate('back')} disabled={step === 0} startIcon={<KeyboardArrowLeft />}>
           Back
         </Button>
-        <Button
-          size="small"
-          onClick={handleClose}
-          sx={{ color: 'text.secondary' }}
-        >
+        <Button size="small" onClick={handleClose} sx={{ color: 'text.secondary' }}>
           Skip
         </Button>
         {step < maxSteps - 1 ? (
-          <Button
-            variant="contained"
-            onClick={handleNext}
-            endIcon={<KeyboardArrowRight />}
-          >
+          <Button variant="contained" onClick={() => animate('next')} endIcon={<KeyboardArrowRight />}>
             Next
           </Button>
         ) : (
           <Button variant="contained" onClick={handleClose}>
-            Get Started
+            Explore Now
           </Button>
         )}
       </DialogActions>

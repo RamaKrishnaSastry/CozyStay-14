@@ -1,29 +1,25 @@
-import { useState, useEffect, FormEvent } from 'react';
+import { useState, useEffect, FormEvent, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Container, Grid, Box, Typography, Chip, Button, TextField, Paper, Avatar,
-  CircularProgress, Alert, Divider,
+  CircularProgress, Alert, Divider, Rating,
 } from '@mui/material';
 import {
   LocationOnOutlined, StarOutlined, WifiOutlined, AcUnitOutlined,
   KitchenOutlined, LocalParkingOutlined, PoolOutlined, FitnessCenterOutlined,
   PetsOutlined, ElevatorOutlined, FireplaceOutlined, DeckOutlined,
+  EventBusyOutlined,
 } from '@mui/icons-material';
-import { propertyApi, bookingApi } from '../api';
-import { Property } from '../types';
+import { propertyApi, bookingApi, reviewApi } from '../api';
+import { Property, Review } from '../types';
 import { useAuth } from '../context/AuthContext';
 
 const amenityIcons: Record<string, React.ReactNode> = {
-  WiFi: <WifiOutlined fontSize="small" />,
-  AC: <AcUnitOutlined fontSize="small" />,
-  Kitchen: <KitchenOutlined fontSize="small" />,
-  Parking: <LocalParkingOutlined fontSize="small" />,
-  Pool: <PoolOutlined fontSize="small" />,
-  Gym: <FitnessCenterOutlined fontSize="small" />,
-  'Pet Friendly': <PetsOutlined fontSize="small" />,
-  Elevator: <ElevatorOutlined fontSize="small" />,
-  Fireplace: <FireplaceOutlined fontSize="small" />,
-  'Beach Access': <DeckOutlined fontSize="small" />,
+  WiFi: <WifiOutlined fontSize="small" />, AC: <AcUnitOutlined fontSize="small" />,
+  Kitchen: <KitchenOutlined fontSize="small" />, Parking: <LocalParkingOutlined fontSize="small" />,
+  Pool: <PoolOutlined fontSize="small" />, Gym: <FitnessCenterOutlined fontSize="small" />,
+  'Pet Friendly': <PetsOutlined fontSize="small" />, Elevator: <ElevatorOutlined fontSize="small" />,
+  Fireplace: <FireplaceOutlined fontSize="small" />, 'Beach Access': <DeckOutlined fontSize="small" />,
   Rooftop: <DeckOutlined fontSize="small" />,
 };
 
@@ -32,26 +28,70 @@ export default function ListingDetail() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [property, setProperty] = useState<Property | null>(null);
+  const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
+  const [revLoading, setRevLoading] = useState(true);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [bookingError, setBookingError] = useState('');
   const [bookingSuccess, setBookingSuccess] = useState('');
   const [selectedPhoto, setSelectedPhoto] = useState(0);
+  const [reviewText, setReviewText] = useState('');
+  const [reviewRating, setReviewRating] = useState<number>(5);
+  const [reviewError, setReviewError] = useState('');
+  const [reviewSuccess, setReviewSuccess] = useState('');
 
   useEffect(() => {
     if (!id) return;
+    setLoading(true);
     propertyApi.getById(id)
       .then(setProperty)
       .catch(() => setProperty(null))
       .finally(() => setLoading(false));
   }, [id]);
 
-  const handleBooking = async (e: FormEvent) => {
+  useEffect(() => {
+    if (!id) return;
+    setRevLoading(true);
+    reviewApi.getByProperty(id)
+      .then(setReviews)
+      .finally(() => setRevLoading(false));
+  }, [id]);
+
+  const blockedDateSet = useMemo(() => {
+    if (!property?.blockedDates) return new Set<string>();
+    return new Set(property.blockedDates);
+  }, [property]);
+
+  const totalNights = useMemo(() =>
+    startDate && endDate
+      ? Math.max(0, Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)))
+      : 0,
+    [startDate, endDate]
+  );
+
+  const avgRating = useMemo(() => {
+    if (reviews.length === 0) return property?.avgRating || 0;
+    return Math.round((reviews.reduce((s, r) => s + r.rating, 0) / reviews.length) * 10) / 10;
+  }, [reviews, property]);
+
+  const handleBooking = useCallback(async (e: FormEvent) => {
     e.preventDefault();
     setBookingError('');
     setBookingSuccess('');
     if (!user) { navigate('/login'); return; }
+    if (totalNights === 0) { setBookingError('Please select valid check-in and check-out dates.'); return; }
+    const datesInRange: string[] = [];
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
+      datesInRange.push(d.toISOString().split('T')[0]);
+    }
+    const blocked = datesInRange.filter((d) => blockedDateSet.has(d));
+    if (blocked.length > 0) {
+      setBookingError(`These dates are unavailable: ${blocked.slice(0, 3).join(', ')}${blocked.length > 3 ? '...' : ''}`);
+      return;
+    }
     try {
       await bookingApi.create({ propertyId: id!, startDate, endDate });
       setBookingSuccess('Booking request sent! The host will respond shortly.');
@@ -60,24 +100,31 @@ export default function ListingDetail() {
     } catch (err: any) {
       setBookingError(err.response?.data?.message || 'Booking failed');
     }
-  };
+  }, [user, id, startDate, endDate, navigate, totalNights, blockedDateSet]);
+
+  const handleReviewSubmit = useCallback(async (e: FormEvent) => {
+    e.preventDefault();
+    setReviewError('');
+    setReviewSuccess('');
+    try {
+      await reviewApi.create({ bookingId: 'pending', propertyId: id!, rating: reviewRating, text: reviewText });
+      setReviewSuccess('Review submitted!');
+      setReviewText('');
+      const updated = await reviewApi.getByProperty(id!);
+      setReviews(updated);
+    } catch {
+      setReviewError('Failed to submit review');
+    }
+  }, [id, reviewRating, reviewText]);
 
   if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}><CircularProgress /></Box>;
-  if (!property) return (
-    <Container sx={{ py: 4 }}>
-      <Alert severity="warning">Listing not found</Alert>
-    </Container>
-  );
-
-  const totalNights = startDate && endDate
-    ? Math.max(0, Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)))
-    : 0;
+  if (!property) return <Container sx={{ py: 4 }}><Alert severity="warning">Listing not found</Alert></Container>;
 
   return (
     <Container maxWidth="xl" sx={{ py: 3 }}>
       <Grid container spacing={3}>
         <Grid size={{ xs: 12, md: 8 }}>
-          <Box sx={{ position: 'relative', borderRadius: 3, overflow: 'hidden', mb: 3 }}>
+          <Box sx={{ borderRadius: 3, overflow: 'hidden', mb: 3 }}>
             <Box
               component="img"
               src={property.photos[selectedPhoto]}
@@ -85,15 +132,16 @@ export default function ListingDetail() {
               sx={{ width: '100%', height: { xs: 300, md: 450 }, objectFit: 'cover', display: 'block' }}
             />
             {property.photos.length > 1 && (
-              <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+              <Box sx={{ display: 'flex', gap: 1, mt: 1, overflowX: 'auto', pb: 0.5 }}>
                 {property.photos.map((photo, i) => (
                   <Box
                     key={i}
                     component="img"
                     src={photo}
+                    loading="lazy"
                     onClick={() => setSelectedPhoto(i)}
                     sx={{
-                      width: 80, height: 60, objectFit: 'cover', borderRadius: 1, cursor: 'pointer',
+                      width: 80, height: 60, objectFit: 'cover', borderRadius: 1, cursor: 'pointer', flexShrink: 0,
                       border: selectedPhoto === i ? '2px solid' : '2px solid transparent',
                       borderColor: selectedPhoto === i ? 'primary.main' : 'transparent',
                       opacity: selectedPhoto === i ? 1 : 0.6,
@@ -105,15 +153,13 @@ export default function ListingDetail() {
             )}
           </Box>
 
-          <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
-            {property.title}
-          </Typography>
+          <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>{property.title}</Typography>
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2, flexWrap: 'wrap' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
               <StarOutlined sx={{ fontSize: 18, color: 'primary.main' }} />
               <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                {property.avgRating || 'New'} · {property.reviewCount || 0} reviews
+                {avgRating || 'New'} · {reviews.length || property.reviewCount || 0} reviews
               </Typography>
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -125,10 +171,7 @@ export default function ListingDetail() {
           <Divider sx={{ mb: 2 }} />
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-            <Avatar
-              src={property.hostPhoto}
-              sx={{ width: 48, height: 48, bgcolor: 'primary.main' }}
-            >
+            <Avatar src={property.hostPhoto} sx={{ width: 48, height: 48, bgcolor: 'primary.main' }}>
               {property.hostName.charAt(0)}
             </Avatar>
             <Box>
@@ -143,10 +186,8 @@ export default function ListingDetail() {
             {property.description}
           </Typography>
 
-          <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-            What this place offers
-          </Typography>
-          <Grid container spacing={1.5} sx={{ mb: 3 }}>
+          <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>What this place offers</Typography>
+          <Grid container spacing={1.5} sx={{ mb: 4 }}>
             {property.amenities.map((a) => (
               <Grid key={a} size={{ xs: 6, sm: 4 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -156,48 +197,104 @@ export default function ListingDetail() {
               </Grid>
             ))}
           </Grid>
+
+          {/* Reviews Section */}
+          <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+            Reviews {reviews.length > 0 && `(${reviews.length})`}
+          </Typography>
+          {revLoading ? (
+            <Box sx={{ display: 'flex', gap: 2, py: 2 }}>
+              {[1, 2, 3].map((i) => (
+                <Box key={i} sx={{ flex: 1, height: 100, bgcolor: 'action.hover', borderRadius: 2 }} />
+              ))}
+            </Box>
+          ) : reviews.length === 0 ? (
+            <Alert severity="info" sx={{ mb: 3, borderRadius: 2 }}>No reviews yet. Be the first to review!</Alert>
+          ) : (
+            <Grid container spacing={2} sx={{ mb: 3 }}>
+              {reviews.slice(0, 6).map((r) => (
+                <Grid key={r.id} size={{ xs: 12, sm: 6 }}>
+                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, height: '100%' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                      <Avatar sx={{ width: 28, height: 28, fontSize: '0.8rem', bgcolor: 'primary.main' }}>
+                        {r.userName.charAt(0)}
+                      </Avatar>
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>{r.userName}</Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {new Date(r.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ ml: 'auto' }}>
+                        <Rating value={r.rating} readOnly size="small" />
+                      </Box>
+                    </Box>
+                    <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
+                      {r.text}
+                    </Typography>
+                  </Paper>
+                </Grid>
+              ))}
+            </Grid>
+          )}
+
+          {user && (
+            <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5 }}>Write a Review</Typography>
+              <Box component="form" onSubmit={handleReviewSubmit}>
+                {reviewError && <Alert severity="error" sx={{ mb: 1.5, borderRadius: 1 }}>{reviewError}</Alert>}
+                {reviewSuccess && <Alert severity="success" sx={{ mb: 1.5, borderRadius: 1 }}>{reviewSuccess}</Alert>}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+                  <Typography variant="body2">Rating:</Typography>
+                  <Rating value={reviewRating} onChange={(_, v) => setReviewRating(v || 5)} />
+                </Box>
+                <TextField
+                  fullWidth multiline rows={2}
+                  placeholder="Share your experience..."
+                  value={reviewText}
+                  onChange={(e) => setReviewText(e.target.value)}
+                  size="small"
+                  sx={{ mb: 1 }}
+                />
+                <Button type="submit" variant="contained" size="small">Submit Review</Button>
+              </Box>
+            </Paper>
+          )}
         </Grid>
 
+        {/* Booking Card */}
         <Grid size={{ xs: 12, md: 4 }}>
-          <Paper
-            sx={{
-              p: 3,
-              position: 'sticky',
-              top: { md: 88 },
-              boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-            }}
-          >
+          <Paper sx={{ p: 3, position: 'sticky', top: { md: 88 }, boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }}>
             <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5, mb: 3 }}>
-              <Typography variant="h5" sx={{ fontWeight: 700 }}>
-                ${property.pricePerNight}
-              </Typography>
+              <Typography variant="h5" sx={{ fontWeight: 700 }}>${property.pricePerNight}</Typography>
               <Typography variant="body2" color="text.secondary">/ night</Typography>
             </Box>
+
+            {blockedDateSet.size > 0 && (
+              <Box sx={{ mb: 2, p: 1.5, bgcolor: 'action.hover', borderRadius: 1.5 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
+                  <EventBusyOutlined sx={{ fontSize: 16, color: 'text.secondary' }} />
+                  <Typography variant="caption" sx={{ fontWeight: 600 }}>Unavailable dates</Typography>
+                </Box>
+                <Typography variant="caption" color="text.secondary">
+                  {[...blockedDateSet].slice(0, 5).map((d) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })).join(', ')}
+                  {blockedDateSet.size > 5 && ` +${blockedDateSet.size - 5} more`}
+                </Typography>
+              </Box>
+            )}
 
             {user?.role === 'guest' && (
               <Box component="form" onSubmit={handleBooking}>
                 {bookingError && <Alert severity="error" sx={{ mb: 2, borderRadius: 1 }}>{bookingError}</Alert>}
                 {bookingSuccess && <Alert severity="success" sx={{ mb: 2, borderRadius: 1 }}>{bookingSuccess}</Alert>}
-                <TextField
-                  label="Check-in"
-                  type="date"
-                  fullWidth
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  required
-                  slotProps={{ inputLabel: { shrink: true } }}
-                  sx={{ mb: 2 }}
-                />
-                <TextField
-                  label="Check-out"
-                  type="date"
-                  fullWidth
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  required
-                  slotProps={{ inputLabel: { shrink: true } }}
-                  sx={{ mb: 2 }}
-                />
+                <TextField label="Check-in" type="date" fullWidth value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)} required
+                  slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: new Date().toISOString().split('T')[0] } }}
+                  sx={{ mb: 2 }} />
+                <TextField label="Check-out" type="date" fullWidth value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)} required
+                  slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: startDate || new Date().toISOString().split('T')[0] } }}
+                  sx={{ mb: 2 }} />
                 {totalNights > 0 && (
                   <Box sx={{ mb: 2 }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
@@ -219,19 +316,11 @@ export default function ListingDetail() {
                 </Typography>
               </Box>
             )}
-
             {!user && (
-              <Button
-                variant="contained"
-                fullWidth
-                size="large"
-                onClick={() => navigate('/login')}
-                sx={{ py: 1.5 }}
-              >
+              <Button variant="contained" fullWidth size="large" onClick={() => navigate('/login')} sx={{ py: 1.5 }}>
                 Log in to Book
               </Button>
             )}
-
             {user && user.role !== 'guest' && (
               <Alert severity="info" sx={{ borderRadius: 1 }}>
                 Switch to a guest account to book stays.

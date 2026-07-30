@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Card, CardMedia, CardContent, Box, Typography, Chip,
@@ -8,16 +9,15 @@ interface Props {
   property: Property;
 }
 
-export default function PropertyCard({ property }: Props) {
+function PropertyCard({ property }: Props) {
   return (
     <Card
       component={Link}
       to={`/listings/${property.id}`}
       sx={{
-        textDecoration: 'none',
-        color: 'inherit',
-        cursor: 'pointer',
+        textDecoration: 'none', color: 'inherit', cursor: 'pointer',
         '&:hover': { transform: 'translateY(-2px)' },
+        height: '100%', display: 'flex', flexDirection: 'column',
       }}
     >
       <CardMedia
@@ -25,11 +25,14 @@ export default function PropertyCard({ property }: Props) {
         height="200"
         image={property.photos[0] || 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800'}
         alt={property.title}
+        loading="lazy"
         sx={{ objectFit: 'cover' }}
       />
-      <CardContent sx={{ pb: '12px !important' }}>
+      <CardContent sx={{ pb: '12px !important', flex: 1, display: 'flex', flexDirection: 'column' }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 600, maxWidth: '70%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <Typography variant="subtitle1" sx={{
+            fontWeight: 600, maxWidth: '70%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}>
             {property.title}
           </Typography>
           {property.avgRating && (
@@ -39,10 +42,8 @@ export default function PropertyCard({ property }: Props) {
             </Box>
           )}
         </Box>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-          {property.location}
-        </Typography>
-        <Typography variant="body2">
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>{property.location}</Typography>
+        <Typography variant="body2" sx={{ mt: 'auto' }}>
           <Box component="span" sx={{ fontWeight: 700 }}>${property.pricePerNight}</Box> night
         </Typography>
         {property.amenities && property.amenities.length > 0 && (
@@ -59,3 +60,5 @@ export default function PropertyCard({ property }: Props) {
     </Card>
   );
 }
+
+export default memo(PropertyCard);

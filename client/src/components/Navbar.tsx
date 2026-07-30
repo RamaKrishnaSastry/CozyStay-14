@@ -8,6 +8,7 @@ import {
   DarkModeOutlined, LightModeOutlined,
   DashboardOutlined, AddHomeOutlined, BookOnlineOutlined, AdminPanelSettingsOutlined,
   LogoutOutlined, LoginOutlined, PersonAddOutlined, HomeOutlined, ExploreOutlined,
+  MessageOutlined,
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
 import { useThemeMode } from '../context/ThemeContext';
@@ -32,6 +33,7 @@ export default function Navbar({ onStartTour }: Props) {
   const navItems = user
     ? [
         { label: 'Browse', path: '/', icon: <HomeOutlined sx={{ fontSize: 20 }} /> },
+        { label: 'Messages', path: '/messages', icon: <MessageOutlined sx={{ fontSize: 20 }} /> },
         ...(user.role === 'host'
           ? [
               { label: 'Dashboard', path: '/host/dashboard', icon: <DashboardOutlined sx={{ fontSize: 20 }} /> },
@@ -141,6 +143,13 @@ export default function Navbar({ onStartTour }: Props) {
                     <Typography variant="body2" sx={{ ml: 1.5 }}>{item.label}</Typography>
                   </MenuItem>
                 ))}
+                <Divider />
+                <MenuItem onClick={() => { navigate('/profile'); setAnchorEl(null); }}>
+                  <Avatar src={user.profilePhoto} sx={{ width: 20, height: 20, fontSize: '0.7rem', bgcolor: 'primary.main' }}>
+                    {user.name.charAt(0)}
+                  </Avatar>
+                  <Typography variant="body2" sx={{ ml: 1.5 }}>My Profile</Typography>
+                </MenuItem>
                 <Divider />
                 <MenuItem onClick={handleLogout}>
                   <LogoutOutlined sx={{ fontSize: 20 }} />

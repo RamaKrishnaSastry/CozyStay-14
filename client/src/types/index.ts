@@ -22,6 +22,7 @@ export interface Property {
   avgRating?: number;
   reviewCount?: number;
   createdAt: string;
+  blockedDates?: string[];
 }
 
 export interface Booking {

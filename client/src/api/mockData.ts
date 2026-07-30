@@ -29,6 +29,7 @@ export const mockProperties: Property[] = [
     ],
     amenities: ['WiFi', 'Pool', 'AC', 'Kitchen', 'Parking', 'Beach Access', 'Chef'],
     isActive: true, avgRating: 4.8, reviewCount: 24, createdAt: '2025-06-10T00:00:00Z',
+    blockedDates: ['2026-09-01', '2026-09-02', '2026-09-03', '2026-09-04', '2026-10-10', '2026-10-11', '2026-10-12'],
   },
   {
     id: '2', hostId: '1', hostName: 'Alice Sharma', hostPhoto: 'https://i.pravatar.cc/150?u=alice',
@@ -134,6 +135,7 @@ export const mockProperties: Property[] = [
     ],
     amenities: ['Kitchen', 'Parking', 'Farm Activities', 'Pet Friendly', 'Bonfire', 'Organic Meals'],
     isActive: true, avgRating: 4.4, reviewCount: 12, createdAt: '2025-08-10T00:00:00Z',
+    blockedDates: ['2026-12-20', '2026-12-21', '2026-12-22', '2026-12-23', '2026-12-24', '2026-12-25'],
   },
   {
     id: '12', hostId: '3', hostName: 'Carol Mehta', hostPhoto: 'https://i.pravatar.cc/150?u=carol',
