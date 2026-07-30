@@ -4,6 +4,7 @@ import {
   Container, Paper, Typography, TextField, Button, Alert, Box, Divider,
 } from '@mui/material';
 import { LoginOutlined } from '@mui/icons-material';
+import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../context/AuthContext';
 
 const DEMO_CREDENTIALS = [
@@ -13,7 +14,7 @@ const DEMO_CREDENTIALS = [
 ];
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, googleLogin } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -58,6 +59,15 @@ export default function Login() {
           <Button type="submit" variant="contained" fullWidth size="large" startIcon={<LoginOutlined />}>
             Sign In
           </Button>
+        </Box>
+
+        <Divider sx={{ my: 3 }}><Typography variant="caption" color="text.secondary">Or continue with</Typography></Divider>
+
+        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+          <GoogleLogin
+            onSuccess={(res) => googleLogin(res.credential!)}
+            onError={() => setError('Google sign-in failed')}
+          />
         </Box>
 
         <Divider sx={{ my: 3 }}><Typography variant="caption" color="text.secondary">Demo accounts</Typography></Divider>

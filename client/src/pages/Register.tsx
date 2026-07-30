@@ -1,14 +1,15 @@
 import { useState, FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
-  Container, Paper, Typography, TextField, Button, Alert, Box,
+  Container, Paper, Typography, TextField, Button, Alert, Box, Divider,
   FormControl, InputLabel, Select, MenuItem,
 } from '@mui/material';
 import { PersonAddOutlined } from '@mui/icons-material';
+import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../context/AuthContext';
 
 export default function Register() {
-  const { register } = useAuth();
+  const { register, googleLogin } = useAuth();
   const navigate = useNavigate();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -56,7 +57,16 @@ export default function Register() {
           </Button>
         </Box>
 
-        <Box sx={{ textAlign: 'center', mt: 3 }}>
+        <Divider sx={{ my: 3 }}><Typography variant="caption" color="text.secondary">Or sign up with</Typography></Divider>
+
+        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+          <GoogleLogin
+            onSuccess={(res) => googleLogin(res.credential!)}
+            onError={() => setError('Google sign-up failed')}
+          />
+        </Box>
+
+        <Box sx={{ textAlign: 'center', mt: 1 }}>
           <Typography variant="body2" color="text.secondary">
             Already registered? <Link to="/login" style={{ color: 'inherit' }}>Sign in</Link>
           </Typography>
