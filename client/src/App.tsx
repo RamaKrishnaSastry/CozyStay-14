@@ -1,5 +1,7 @@
 import { Routes, Route } from 'react-router-dom';
+import Box from '@mui/material/Box';
 import Navbar from './components/Navbar';
+import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
 import Home from './pages/Home';
 import Login from './pages/Login';
@@ -14,9 +16,9 @@ import NotFound from './pages/NotFound';
 
 export default function App() {
   return (
-    <>
+    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <Navbar />
-      <main className="container">
+      <Box component="main" sx={{ flex: 1, pt: { xs: 7, sm: 8 } }}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
@@ -39,7 +41,8 @@ export default function App() {
 
           <Route path="*" element={<NotFound />} />
         </Routes>
-      </main>
-    </>
+      </Box>
+      <Footer />
+    </Box>
   );
 }

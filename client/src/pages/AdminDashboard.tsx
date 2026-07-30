@@ -1,9 +1,21 @@
 import { useState, useEffect } from 'react';
-import { adminApi, userApi, propertyApi } from '../api';
+import {
+  Container, Typography, Box, Paper, CircularProgress, Chip, Button,
+  Tabs, Tab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
+  Dialog, DialogTitle, DialogContent, DialogActions, TextField, Select, MenuItem, Grid,
+} from '@mui/material';
+import { DeleteOutlined, EditOutlined } from '@mui/icons-material';
+import { adminApi, userApi } from '../api';
 import { User, Property, Booking } from '../types';
 
+const statusColors: Record<string, 'warning' | 'success' | 'error'> = {
+  pending: 'warning',
+  confirmed: 'success',
+  declined: 'error',
+};
+
 export default function AdminDashboard() {
-  const [tab, setTab] = useState<'stats' | 'users' | 'listings' | 'bookings'>('stats');
+  const [tab, setTab] = useState(0);
   const [stats, setStats] = useState<any>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [listings, setListings] = useState<Property[]>([]);
@@ -11,26 +23,19 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
 
   const [editUser, setEditUser] = useState<{ id: string; name: string; email: string; role: string } | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+
+  const endpoints = [
+    () => adminApi.getStats().then(setStats),
+    () => userApi.getAll().then(setUsers),
+    () => adminApi.getListings().then(setListings),
+    () => adminApi.getBookings().then(setBookings),
+  ];
 
   useEffect(() => {
     setLoading(true);
-    const load = async () => {
-      try {
-        if (tab === 'stats') setStats(await adminApi.getStats());
-        if (tab === 'users') setUsers(await userApi.getAll());
-        if (tab === 'listings') setListings(await adminApi.getListings());
-        if (tab === 'bookings') setBookings(await adminApi.getBookings());
-      } catch {}
-      setLoading(false);
-    };
-    load();
+    endpoints[tab]().finally(() => setLoading(false));
   }, [tab]);
-
-  const handleDeleteUser = async (id: string) => {
-    if (!confirm('Delete this user?')) return;
-    await userApi.delete(id);
-    setUsers(users.filter(u => u.id !== id));
-  };
 
   const handleUpdateUser = async () => {
     if (!editUser) return;
@@ -39,100 +44,180 @@ export default function AdminDashboard() {
     setUsers(await userApi.getAll());
   };
 
-  const handleDeleteListing = async (id: string) => {
-    if (!confirm('Deactivate this listing?')) return;
+  const handleDeleteUser = async (id: string) => {
+    await userApi.delete(id);
+    setDeleteConfirm(null);
+    setUsers(users.filter(u => u.id !== id));
+  };
+
+  const handleDeactivateListing = async (id: string) => {
     await adminApi.deleteListing(id);
-    setListings(listings.map(l => l._id === id ? { ...l, isActive: false } : l));
+    setListings(listings.map(l => l.id === id ? { ...l, isActive: false } : l));
   };
 
   const handleDeleteBooking = async (id: string) => {
-    if (!confirm('Delete this booking?')) return;
     await adminApi.deleteBooking(id);
-    setBookings(bookings.filter(b => b._id !== id));
+    setDeleteConfirm(null);
+    setBookings(bookings.filter(b => b.id !== id));
   };
 
+  const tabs = ['Stats', 'Users', 'Listings', 'Bookings'];
+
   return (
-    <div className="page">
-      <h1>Admin Dashboard</h1>
-      <div className="tabs">
-        {(['stats', 'users', 'listings', 'bookings'] as const).map(t => (
-          <button key={t} className={`tab ${tab === t ? 'active' : ''}`} onClick={() => setTab(t)}>
-            {t.charAt(0).toUpperCase() + t.slice(1)}
-          </button>
-        ))}
-      </div>
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Typography variant="h5" sx={{ fontWeight: 700, mb: 3 }}>
+        Admin Dashboard
+      </Typography>
 
-      {loading && <div className="loading">Loading...</div>}
+      <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 3 }} textColor="primary" indicatorColor="primary">
+        {tabs.map(t => <Tab key={t} label={t} />)}
+      </Tabs>
 
-      {tab === 'stats' && stats && (
-        <div className="stats-grid">
-          <div className="stat-card"><h3>Users</h3><p>{stats.totalUsers}</p></div>
-          <div className="stat-card"><h3>Active Listings</h3><p>{stats.totalActiveListings}</p></div>
-          <div className="stat-card"><h3>Bookings</h3><p>{stats.totalBookings}</p></div>
-        </div>
+      {loading && <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}><CircularProgress /></Box>}
+
+      {!loading && tab === 0 && stats && (
+        <Grid container spacing={3}>
+          {[
+            { label: 'Total Users', value: stats.totalUsers },
+            { label: 'Active Listings', value: stats.totalActiveListings },
+            { label: 'Total Bookings', value: stats.totalBookings },
+          ].map(s => (
+            <Grid key={s.label} size={{ xs: 12, sm: 4 }}>
+              <Paper sx={{ p: 3, textAlign: 'center' }}>
+                <Typography variant="h3" sx={{ fontWeight: 700, color: 'primary.main' }}>{s.value}</Typography>
+                <Typography variant="body2" color="text.secondary">{s.label}</Typography>
+              </Paper>
+            </Grid>
+          ))}
+        </Grid>
       )}
 
-      {tab === 'users' && (
-        <table className="admin-table">
-          <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Actions</th></tr></thead>
-          <tbody>
-            {users.map(u => (
-              <tr key={u.id}>
-                {editUser?.id === u.id ? (
-                  <>
-                    <td><input value={editUser.name} onChange={e => setEditUser({ ...editUser, name: e.target.value })} /></td>
-                    <td><input value={editUser.email} onChange={e => setEditUser({ ...editUser, email: e.target.value })} /></td>
-                    <td>
-                      <select value={editUser.role} onChange={e => setEditUser({ ...editUser, role: e.target.value })}>
-                        <option value="guest">Guest</option><option value="host">Host</option><option value="admin">Admin</option>
-                      </select>
-                    </td>
-                    <td><button onClick={handleUpdateUser} className="btn-sm">Save</button> <button onClick={() => setEditUser(null)} className="btn-sm">Cancel</button></td>
-                  </>
-                ) : (
-                  <>
-                    <td>{u.name}</td><td>{u.email}</td><td>{u.role}</td>
-                    <td>
-                      <button onClick={() => setEditUser({ id: u.id, name: u.name, email: u.email, role: u.role })} className="btn-sm">Edit</button>
-                      <button onClick={() => handleDeleteUser(u.id)} className="btn-sm btn-danger">Delete</button>
-                    </td>
-                  </>
-                )}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      {!loading && tab === 1 && (
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Name</TableCell>
+                <TableCell>Email</TableCell>
+                <TableCell>Role</TableCell>
+                <TableCell>Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {users.map(u => (
+                <TableRow key={u.id}>
+                  {editUser?.id === u.id ? (
+                    <>
+                      <TableCell><TextField size="small" value={editUser.name} onChange={e => setEditUser({ ...editUser, name: e.target.value })} /></TableCell>
+                      <TableCell><TextField size="small" value={editUser.email} onChange={e => setEditUser({ ...editUser, email: e.target.value })} /></TableCell>
+                      <TableCell>
+                        <Select size="small" value={editUser.role} onChange={e => setEditUser({ ...editUser, role: e.target.value })}>
+                          <MenuItem value="guest">Guest</MenuItem>
+                          <MenuItem value="host">Host</MenuItem>
+                          <MenuItem value="admin">Admin</MenuItem>
+                        </Select>
+                      </TableCell>
+                      <TableCell>
+                        <Button size="small" variant="contained" onClick={handleUpdateUser} sx={{ mr: 1 }}>Save</Button>
+                        <Button size="small" onClick={() => setEditUser(null)}>Cancel</Button>
+                      </TableCell>
+                    </>
+                  ) : (
+                    <>
+                      <TableCell>{u.name}</TableCell>
+                      <TableCell>{u.email}</TableCell>
+                      <TableCell><Chip label={u.role} size="small" /></TableCell>
+                      <TableCell>
+                        <Button size="small" startIcon={<EditOutlined />} onClick={() => setEditUser({ id: u.id, name: u.name, email: u.email, role: u.role })} sx={{ mr: 1 }}>Edit</Button>
+                        <Button size="small" color="error" startIcon={<DeleteOutlined />} onClick={() => setDeleteConfirm(u.id)}>Delete</Button>
+                      </TableCell>
+                    </>
+                  )}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
 
-      {tab === 'listings' && (
-        <table className="admin-table">
-          <thead><tr><th>Title</th><th>Host</th><th>Price</th><th>Active</th><th>Actions</th></tr></thead>
-          <tbody>
-            {listings.map(l => (
-              <tr key={l._id}>
-                <td>{l.title}</td><td>{(l.host as any)?.name}</td><td>${l.pricePerNight}</td><td>{l.isActive ? 'Yes' : 'No'}</td>
-                <td>{l.isActive && <button onClick={() => handleDeleteListing(l._id)} className="btn-sm btn-danger">Deactivate</button>}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      {!loading && tab === 2 && (
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Title</TableCell>
+                <TableCell>Host</TableCell>
+                <TableCell>Price</TableCell>
+                <TableCell>Active</TableCell>
+                <TableCell>Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {listings.map(l => (
+                <TableRow key={l.id}>
+                  <TableCell>{l.title}</TableCell>
+                  <TableCell>{l.hostName}</TableCell>
+                  <TableCell>${l.pricePerNight}</TableCell>
+                  <TableCell><Chip label={l.isActive ? 'Active' : 'Inactive'} size="small" color={l.isActive ? 'success' : 'default'} /></TableCell>
+                  <TableCell>
+                    {l.isActive && (
+                      <Button size="small" color="error" startIcon={<DeleteOutlined />} onClick={() => handleDeactivateListing(l.id)}>
+                        Deactivate
+                      </Button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
 
-      {tab === 'bookings' && (
-        <table className="admin-table">
-          <thead><tr><th>Property</th><th>Guest</th><th>Dates</th><th>Status</th><th>Actions</th></tr></thead>
-          <tbody>
-            {bookings.map(b => (
-              <tr key={b._id}>
-                <td>{(b.property as any)?.title}</td><td>{b.guest?.name}</td>
-                <td>{new Date(b.startDate).toLocaleDateString()} — {new Date(b.endDate).toLocaleDateString()}</td>
-                <td>{b.status}</td>
-                <td><button onClick={() => handleDeleteBooking(b._id)} className="btn-sm btn-danger">Delete</button></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      {!loading && tab === 3 && (
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Property</TableCell>
+                <TableCell>Guest</TableCell>
+                <TableCell>Dates</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {bookings.map(b => (
+                <TableRow key={b.id}>
+                  <TableCell>{b.propertyTitle}</TableCell>
+                  <TableCell>{b.guestName}</TableCell>
+                  <TableCell>
+                    {new Date(b.startDate).toLocaleDateString()} — {new Date(b.endDate).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell><Chip label={b.status} size="small" color={statusColors[b.status] || 'default'} /></TableCell>
+                  <TableCell>
+                    <Button size="small" color="error" startIcon={<DeleteOutlined />} onClick={() => setDeleteConfirm(b.id)}>
+                      Delete
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
-    </div>
+
+      <Dialog open={!!deleteConfirm} onClose={() => setDeleteConfirm(null)}>
+        <DialogTitle>Confirm Delete</DialogTitle>
+        <DialogContent>Are you sure you want to delete this item?</DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteConfirm(null)}>Cancel</Button>
+          <Button color="error" variant="contained" onClick={() => {
+            if (tab === 1) handleDeleteUser(deleteConfirm!);
+            else if (tab === 3) handleDeleteBooking(deleteConfirm!);
+            setDeleteConfirm(null);
+          }}>Delete</Button>
+        </DialogActions>
+      </Dialog>
+    </Container>
   );
 }
