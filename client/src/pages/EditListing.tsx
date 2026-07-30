@@ -6,11 +6,23 @@ import {
 import { SaveOutlined } from '@mui/icons-material';
 import { propertyApi } from '../api';
 import { Property } from '../types';
+import MediaItem from '../components/MediaItem';
 
 const ALL_AMENITIES = [
   'WiFi', 'Pool', 'AC', 'Kitchen', 'Parking', 'Beach Access', 'Pet Friendly',
   'Gym', 'Fireplace', 'Bonfire', 'Jacuzzi', 'Breakfast', 'Garden', 'Hiking',
 ];
+
+function PhotoPreview({ urls }: { urls: string[] }) {
+  if (urls.length === 0) return null;
+  return (
+    <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
+      {urls.map((url, i) => (
+        <MediaItem key={i} src={url} alt={`Preview ${i + 1}`} sx={{ width: 80, height: 60, objectFit: 'cover', borderRadius: 1 }} />
+      ))}
+    </Box>
+  );
+}
 
 export default function EditListing() {
   const { id } = useParams<{ id: string }>();
@@ -70,17 +82,11 @@ export default function EditListing() {
           {error && <Alert severity="error" sx={{ mb: 2, borderRadius: 1 }}>{error}</Alert>}
           <TextField label="Title" fullWidth value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required sx={{ mb: 2 }} />
           <TextField label="Description" fullWidth multiline rows={4} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} required sx={{ mb: 2 }} />
-          <TextField label="Price per night ($)" type="number" fullWidth value={form.pricePerNight} onChange={(e) => setForm({ ...form, pricePerNight: e.target.value })} required inputProps={{ min: 0 }} sx={{ mb: 2 }} />
+          <TextField label="Price per night ($)" type="number" fullWidth value={form.pricePerNight} onChange={(e) => setForm({ ...form, pricePerNight: e.target.value })} required slotProps={{ htmlInput: { min: 0 } }} sx={{ mb: 2 }} />
           <TextField label="Location" fullWidth value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} required sx={{ mb: 2 }} />
           <TextField label="Photo URLs (one per line)" fullWidth multiline rows={3} value={form.photos} onChange={(e) => setForm({ ...form, photos: e.target.value })} required sx={{ mb: 2 }} />
 
-          {photoUrls.length > 0 && (
-            <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
-              {photoUrls.map((url, i) => (
-                <Box key={i} component="img" src={url} sx={{ width: 80, height: 60, objectFit: 'cover', borderRadius: 1 }} />
-              ))}
-            </Box>
-          )}
+          <PhotoPreview urls={photoUrls} />
 
           <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>Amenities</Typography>
           <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mb: 3 }}>

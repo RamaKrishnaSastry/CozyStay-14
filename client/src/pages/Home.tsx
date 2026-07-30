@@ -29,7 +29,7 @@ export default function Home() {
     setLoading(true);
     const params: any = {};
     if (location) params.location = location;
-    if (maxPrice) params.max_price = Number(maxPrice);
+    if (maxPrice) params.maxPrice = Number(maxPrice);
     propertyApi.getAll(params)
       .then(setProperties)
       .finally(() => setLoading(false));
@@ -49,7 +49,7 @@ export default function Home() {
           type="number"
           placeholder="Max price / night"
           value={maxPrice}
-          onChange={(e) => setMaxPrice(e.target.value)}
+          onChange={(e) => setMaxPrice(Number(e.target.value))}
         />
       </div>
       {loading ? (
