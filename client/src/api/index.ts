@@ -1,9 +1,10 @@
 import { AuthResponse, Property, Booking, User, Review } from '../types';
-import { mockUsers, mockProperties, mockBookings } from './mockData';
+import { mockUsers, mockProperties, mockBookings, mockReviews } from './mockData';
 
 let users = [...mockUsers];
 let properties = [...mockProperties];
 let bookings = [...mockBookings];
+let reviews = [...mockReviews];
 
 const delay = (ms = 400) => new Promise((r) => setTimeout(r, ms));
 
@@ -61,6 +62,11 @@ export const propertyApi = {
     await delay();
     const prop = properties.find((p) => p.id === id);
     if (!prop) throw { response: { status: 404, data: { message: 'Listing not found' } } };
+    const propReviews = reviews.filter((r) => r.propertyId === id);
+    if (propReviews.length > 0) {
+      prop.avgRating = Math.round((propReviews.reduce((s, r) => s + r.rating, 0) / propReviews.length) * 10) / 10;
+      prop.reviewCount = propReviews.length;
+    }
     return prop;
   },
   create: async (data: Partial<Property>): Promise<Property> => {
@@ -162,9 +168,13 @@ export const bookingApi = {
 export const reviewApi = {
   getByProperty: async (propertyId: string): Promise<Review[]> => {
     await delay(200);
-    return [];
+    return reviews.filter((r) => r.propertyId === propertyId);
   },
-  create: async (data: { bookingId: string; rating: number; text: string }): Promise<Review> => {
+  getByUser: async (userId: string): Promise<Review[]> => {
+    await delay(200);
+    return reviews.filter((r) => r.userId === userId);
+  },
+  create: async (data: { bookingId: string; propertyId: string; rating: number; text: string }): Promise<Review> => {
     await delay();
     const token = localStorage.getItem('token');
     const userId = token?.split('-')[1] || '';
@@ -174,11 +184,18 @@ export const reviewApi = {
       bookingId: data.bookingId,
       userId,
       userName: user?.name || '',
-      propertyId: '',
+      propertyId: data.propertyId,
       rating: data.rating,
       text: data.text,
       createdAt: new Date().toISOString(),
     };
+    reviews.push(review);
+    const prop = properties.find((p) => p.id === data.propertyId);
+    if (prop) {
+      const propReviews = reviews.filter((r) => r.propertyId === data.propertyId);
+      prop.avgRating = Math.round((propReviews.reduce((s, r) => s + r.rating, 0) / propReviews.length) * 10) / 10;
+      prop.reviewCount = propReviews.length;
+    }
     return review;
   },
 };

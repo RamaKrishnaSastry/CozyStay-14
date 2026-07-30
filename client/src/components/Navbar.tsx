@@ -7,12 +7,16 @@ import {
 import {
   DarkModeOutlined, LightModeOutlined,
   DashboardOutlined, AddHomeOutlined, BookOnlineOutlined, AdminPanelSettingsOutlined,
-  LogoutOutlined, LoginOutlined, PersonAddOutlined, HomeOutlined,
+  LogoutOutlined, LoginOutlined, PersonAddOutlined, HomeOutlined, ExploreOutlined,
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
 import { useThemeMode } from '../context/ThemeContext';
 
-export default function Navbar() {
+interface Props {
+  onStartTour?: () => void;
+}
+
+export default function Navbar({ onStartTour }: Props) {
   const { user, logout } = useAuth();
   const { darkMode, toggleDarkMode } = useThemeMode();
   const navigate = useNavigate();
@@ -75,6 +79,27 @@ export default function Navbar() {
           </Box>
 
           <Box sx={{ flex: 1 }} />
+
+          {onStartTour && (
+            <Button
+              onClick={onStartTour}
+              size="small"
+              startIcon={<ExploreOutlined />}
+              sx={{
+                color: 'primary.main',
+                fontWeight: 600,
+                display: { xs: 'none', sm: 'inline-flex' },
+                animation: 'tourPulse 2s infinite',
+                '@keyframes tourPulse': {
+                  '0%': { opacity: 0.7 },
+                  '50%': { opacity: 1 },
+                  '100%': { opacity: 0.7 },
+                },
+              }}
+            >
+              Tour
+            </Button>
+          )}
 
           <IconButton onClick={toggleDarkMode} size="small" sx={{ color: 'text.secondary' }}>
             {darkMode ? <LightModeOutlined /> : <DarkModeOutlined />}
