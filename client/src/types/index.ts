@@ -8,30 +8,50 @@ export interface User {
 }
 
 export interface Property {
-  id: number;
-  host_id?: number;
-  host_name?: string;
-  host?: { id: number; name: string; email?: string; profilePhoto?: string };
+  id: string;
+  hostId: string;
+  hostName: string;
+  hostPhoto?: string;
+  host?: { id: string; name: string; email?: string; profilePhoto?: string };
   title: string;
   description: string;
-  price_per_night: number;
+  pricePerNight: number;
   location: string;
   photos: string[];
-  amenities?: string[];
-  is_active: boolean;
-  created_at: string;
+  amenities: string[];
+  isActive: boolean;
+  avgRating?: number;
+  reviewCount: number;
+  createdAt: string;
+  blockedDates?: string[];
 }
 
 export interface Booking {
-  id: number;
-  property_id?: number;
-  guest_id?: number;
-  property?: Property | { id: number; title: string };
-  guest?: { id: number; name: string; email: string };
-  start_date: string;
-  end_date: string;
+  id: string;
+  propertyId: string;
+  propertyTitle: string;
+  propertyPhoto: string;
+  guestId: string;
+  guestName: string;
+  hostId: string;
+  hostName?: string;
+  property?: { id: string; title: string; photos?: string[]; pricePerNight?: number; location?: string };
+  guest?: { id: string; name: string; email: string };
+  startDate: string;
+  endDate: string;
   status: 'pending' | 'confirmed' | 'declined' | 'paid';
-  created_at: string;
+  createdAt: string;
+}
+
+export interface Review {
+  id: string;
+  bookingId: string;
+  userId: string;
+  userName: string;
+  propertyId: string;
+  rating: number;
+  text: string;
+  createdAt: string;
 }
 
 export interface AuthResponse {

@@ -34,6 +34,24 @@ export const authApi = {
     if (!user) throw { response: { data: { message: 'Invalid credentials' } } };
     return { token: generateToken(user), user };
   },
+  googleLogin: async (credential: string): Promise<AuthResponse> => {
+    await delay();
+    const response = await fetch(`https://www.googleapis.com/oauth2/v3/tokeninfo?id_token=${credential}`);
+    const payload = await response.json();
+    let user = users.find((u) => u.email === payload.email);
+    if (!user) {
+      user = {
+        id: String(users.length + 1),
+        name: payload.name || payload.email.split('@')[0],
+        email: payload.email,
+        role: 'guest',
+        profilePhoto: payload.picture,
+        createdAt: new Date().toISOString(),
+      };
+      users.push(user);
+    }
+    return { token: generateToken(user), user };
+  },
   getMe: async (): Promise<User> => {
     await delay(200);
     const token = localStorage.getItem('token');

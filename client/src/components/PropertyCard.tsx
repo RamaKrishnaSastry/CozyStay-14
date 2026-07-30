@@ -4,6 +4,7 @@ import {
   Card, CardMedia, CardContent, Box, Typography, Chip,
 } from '@mui/material';
 import { Property } from '../types';
+import MediaItem from './MediaItem';
 
 interface Props {
   property: Property;
@@ -20,13 +21,10 @@ function PropertyCard({ property }: Props) {
         height: '100%', display: 'flex', flexDirection: 'column',
       }}
     >
-      <CardMedia
-        component="img"
-        height="200"
-        image={property.photos[0] || 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800'}
+      <MediaItem
+        src={property.photos[0] || 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800'}
         alt={property.title}
-        loading="lazy"
-        sx={{ objectFit: 'cover' }}
+        sx={{ height: 200, width: '100%', objectFit: 'cover' }}
       />
       <CardContent sx={{ pb: '12px !important', flex: 1, display: 'flex', flexDirection: 'column' }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
