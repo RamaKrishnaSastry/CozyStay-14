@@ -6,3 +6,13 @@ server/uploads/*
 *.log
 .DS_Store
 Thumbs.db
+
+# Python / Flask
+venv/
+__pycache__/
+*.pyc
+*.pyo
+instance/
+*.db
+ca.pem
+flask*.log
