@@ -14,13 +14,35 @@ function generateToken(user: User): string {
 }
 
 export const authApi = {
-  register: (data: { name: string; email: string; password: string; role?: string }) =>
-    api.post<AuthResponse>('/auth/register', data).then(r => r.data),
-  login: (data: { email: string; password: string }) =>
-    api.post<AuthResponse>('/auth/login', data).then(r => r.data),
-  getMe: () => api.get<{ user: User }>('/auth/me').then(r => r.data.user),
-  googleLogin: (credential: string) =>
-    api.post<AuthResponse>('/auth/google', { credential }).then(r => r.data),
+  register: async (data: { name: string; email: string; password: string; role?: string }): Promise<AuthResponse> => {
+    await delay();
+    const exists = users.find((u) => u.email === data.email);
+    if (exists) throw { response: { data: { message: 'Email already registered' } } };
+    const user: User = {
+      id: String(users.length + 1),
+      name: data.name,
+      email: data.email,
+      role: (data.role as User['role']) || 'guest',
+      createdAt: new Date().toISOString(),
+    };
+    users.push(user);
+    return { token: generateToken(user), user };
+  },
+  login: async (data: { email: string; password: string }): Promise<AuthResponse> => {
+    await delay();
+    const user = users.find((u) => u.email === data.email);
+    if (!user) throw { response: { data: { message: 'Invalid credentials' } } };
+    return { token: generateToken(user), user };
+  },
+  getMe: async (): Promise<User> => {
+    await delay(200);
+    const token = localStorage.getItem('token');
+    if (!token) throw { response: { status: 401 } };
+    const userId = token.split('-')[1];
+    const user = users.find((u) => u.id === userId);
+    if (!user) throw { response: { status: 401 } };
+    return user;
+  },
 };
 
 export const propertyApi = {
@@ -88,12 +110,94 @@ export const propertyApi = {
 };
 
 export const bookingApi = {
-  create: (data: { property_id: number; start_date: string; end_date: string }) =>
-    api.post<Booking>('/bookings', data).then(r => r.data),
-  getMy: () => api.get<Booking[]>('/bookings/my').then(r => r.data),
-  getRequests: () => api.get<Booking[]>('/bookings/requests').then(r => r.data),
-  respond: (id: string, action: 'confirmed' | 'declined') =>
-    api.put<Booking>(`/bookings/${id}/respond`, { action }).then(r => r.data),
+  create: async (data: { propertyId: string; startDate: string; endDate: string }): Promise<Booking> => {
+    await delay();
+    const token = localStorage.getItem('token');
+    const guestId = token?.split('-')[1] || '';
+    const guest = users.find((u) => u.id === guestId);
+    const prop = properties.find((p) => p.id === data.propertyId);
+    if (!prop) throw { response: { data: { message: 'Property not found' } } };
+    if (new Date(data.endDate) <= new Date(data.startDate)) {
+      throw { response: { data: { message: 'End date must be after start date' } } };
+    }
+    const overlap = bookings.find(
+      (b) =>
+        b.propertyId === data.propertyId &&
+        b.status === 'confirmed' &&
+        new Date(b.startDate) < new Date(data.endDate) &&
+        new Date(b.endDate) > new Date(data.startDate)
+    );
+    if (overlap) throw { response: { data: { message: 'These dates are already booked' } } };
+    const booking: Booking = {
+      id: String(bookings.length + 1),
+      propertyId: data.propertyId,
+      propertyTitle: prop.title,
+      propertyPhoto: prop.photos[0],
+      guestId,
+      guestName: guest?.name || '',
+      hostId: prop.hostId,
+      startDate: data.startDate,
+      endDate: data.endDate,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+    };
+    bookings.push(booking);
+    return booking;
+  },
+  getMy: async (): Promise<Booking[]> => {
+    await delay();
+    const token = localStorage.getItem('token');
+    const guestId = token?.split('-')[1] || '';
+    return bookings.filter((b) => b.guestId === guestId);
+  },
+  getRequests: async (): Promise<Booking[]> => {
+    await delay();
+    const token = localStorage.getItem('token');
+    const hostId = token?.split('-')[1] || '';
+    return bookings.filter((b) => b.hostId === hostId);
+  },
+  respond: async (id: string, action: 'confirmed' | 'declined'): Promise<Booking> => {
+    await delay();
+    const idx = bookings.findIndex((b) => b.id === id);
+    if (idx === -1) throw { response: { status: 404 } };
+    bookings[idx] = { ...bookings[idx], status: action };
+    return bookings[idx];
+  },
+};
+
+export const reviewApi = {
+  getByProperty: async (propertyId: string): Promise<Review[]> => {
+    await delay(200);
+    return reviews.filter((r) => r.propertyId === propertyId);
+  },
+  getByUser: async (userId: string): Promise<Review[]> => {
+    await delay(200);
+    return reviews.filter((r) => r.userId === userId);
+  },
+  create: async (data: { bookingId: string; propertyId: string; rating: number; text: string }): Promise<Review> => {
+    await delay();
+    const token = localStorage.getItem('token');
+    const userId = token?.split('-')[1] || '';
+    const user = users.find((u) => u.id === userId);
+    const review: Review = {
+      id: `r-${Date.now()}`,
+      bookingId: data.bookingId,
+      userId,
+      userName: user?.name || '',
+      propertyId: data.propertyId,
+      rating: data.rating,
+      text: data.text,
+      createdAt: new Date().toISOString(),
+    };
+    reviews.push(review);
+    const prop = properties.find((p) => p.id === data.propertyId);
+    if (prop) {
+      const propReviews = reviews.filter((r) => r.propertyId === data.propertyId);
+      prop.avgRating = Math.round((propReviews.reduce((s, r) => s + r.rating, 0) / propReviews.length) * 10) / 10;
+      prop.reviewCount = propReviews.length;
+    }
+    return review;
+  },
 };
 
 export const userApi = {
@@ -115,9 +219,30 @@ export const userApi = {
 };
 
 export const adminApi = {
-  getStats: () => api.get<{ total_users: number; total_active_listings: number; total_bookings: number }>('/admin/stats').then(r => r.data),
-  getListings: () => api.get<Property[]>('/admin/listings').then(r => r.data),
-  getBookings: () => api.get<Booking[]>('/admin/bookings').then(r => r.data),
-  deleteListing: (id: string) => api.delete(`/admin/listings/${id}`).then(r => r.data),
-  deleteBooking: (id: string) => api.delete(`/admin/bookings/${id}`).then(r => r.data),
+  getStats: async (): Promise<{ totalUsers: number; totalActiveListings: number; totalBookings: number }> => {
+    await delay();
+    return {
+      totalUsers: users.length,
+      totalActiveListings: properties.filter((p) => p.isActive).length,
+      totalBookings: bookings.length,
+    };
+  },
+  getListings: async (): Promise<Property[]> => {
+    await delay();
+    return properties;
+  },
+  getBookings: async (): Promise<Booking[]> => {
+    await delay();
+    return bookings;
+  },
+  deleteListing: async (id: string): Promise<{ message: string }> => {
+    await delay();
+    properties = properties.map((p) => (p.id === id ? { ...p, isActive: false } : p));
+    return { message: 'Listing deactivated' };
+  },
+  deleteBooking: async (id: string): Promise<{ message: string }> => {
+    await delay();
+    bookings = bookings.filter((b) => b.id !== id);
+    return { message: 'Booking deleted' };
+  },
 };

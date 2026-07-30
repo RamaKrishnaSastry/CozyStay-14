@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Container, Typography, Box, Paper, Chip, CircularProgress, Button,
-  Grid, Tabs, Tab, Dialog, DialogTitle, DialogContent, DialogActions,
+  Tabs, Tab, Dialog, DialogTitle, DialogContent, DialogActions,
 } from '@mui/material';
 import { CheckCircleOutlineOutlined, CancelOutlined, DeleteOutlined, EditOutlined } from '@mui/icons-material';
 import { propertyApi, bookingApi } from '../api';
@@ -29,7 +29,7 @@ export default function HostDashboard() {
       propertyApi.getAll(),
       bookingApi.getRequests(),
     ]).then(([props, reqs]) => {
-      setListings(props.filter((p) => p.host_id === Number(user!.id)));
+      setListings(props.filter((p) => p.hostId === user!.id));
       setRequests(reqs);
     }).finally(() => setLoading(false));
   };
@@ -59,37 +59,78 @@ export default function HostDashboard() {
         Host Dashboard
       </Typography>
 
-      <h2>My Listings</h2>
-      {listings.length === 0 ? <div className="empty">You have no listings yet.</div> : (
-        <div className="listing-list">
-          {listings.map((p) => (
-            <div key={p.id} className="listing-row">
-              <Link to={`/listings/${p.id}`}>{p.title}</Link>
-              <span>${p.price_per_night}/night</span>
-              <Link to={`/listings/${p.id}/edit`} className="btn-sm">Edit</Link>
-              <button onClick={() => handleDelete(String(p.id))} className="btn-sm btn-danger">Delete</button>
-            </div>
-          ))}
-        </div>
+      <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 3 }}>
+        <Tab label="My Listings" />
+        <Tab label="Booking Requests" />
+      </Tabs>
+
+      {tab === 0 && (
+        <>
+          {listings.length === 0 ? (
+            <Paper sx={{ p: 4, textAlign: 'center', borderRadius: 2 }}>
+              <Typography color="text.secondary">You have no listings yet.</Typography>
+              <Button component={Link} to="/listings/new" variant="contained" sx={{ mt: 2 }}>
+                Create Your First Listing
+              </Button>
+            </Paper>
+          ) : (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              {listings.map((p) => (
+                <Paper key={p.id} sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 2, borderRadius: 2 }}>
+                  <Box component="img" src={p.photos[0]} sx={{ width: 80, height: 60, objectFit: 'cover', borderRadius: 1 }} />
+                  <Box sx={{ flex: 1 }}>
+                    <Link to={`/listings/${p.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>{p.title}</Typography>
+                    </Link>
+                    <Typography variant="caption" color="text.secondary">${p.pricePerNight}/night · {p.location}</Typography>
+                  </Box>
+                  <Button component={Link} to={`/listings/${p.id}/edit`} size="small" startIcon={<EditOutlined />} variant="outlined">
+                    Edit
+                  </Button>
+                  <Button size="small" color="error" startIcon={<DeleteOutlined />} onClick={() => setDeleteDialog(p.id)} variant="outlined">
+                    Delete
+                  </Button>
+                </Paper>
+              ))}
+            </Box>
+          )}
+        </>
       )}
 
-      <h2>Booking Requests</h2>
-      {requests.length === 0 ? <div className="empty">No booking requests yet.</div> : (
-        <div className="request-list">
-          {requests.map((r) => (
-            <div key={r.id} className={`request-card status-${r.status}`}>
-              <p><strong>{r.guest?.name}</strong> requested <strong>{(r.property as any)?.title}</strong></p>
-              <p>{new Date(r.start_date).toLocaleDateString()} — {new Date(r.end_date).toLocaleDateString()}</p>
-              <p>Status: {r.status}</p>
-              {r.status === 'pending' && (
-                <div className="request-actions">
-                  <button onClick={() => handleRespond(String(r.id), 'confirmed')} className="btn-sm btn-success">Accept</button>
-                  <button onClick={() => handleRespond(String(r.id), 'declined')} className="btn-sm btn-danger">Decline</button>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+      {tab === 1 && (
+        <>
+          {requests.length === 0 ? (
+            <Paper sx={{ p: 4, textAlign: 'center', borderRadius: 2 }}>
+              <Typography color="text.secondary">No booking requests yet.</Typography>
+            </Paper>
+          ) : (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              {requests.map((r) => (
+                <Paper key={r.id} sx={{ p: 2, borderRadius: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      {r.guestName} requested <Link to={`/listings/${r.propertyId}`} style={{ textDecoration: 'none' }}>{r.propertyTitle}</Link>
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {new Date(r.startDate).toLocaleDateString()} — {new Date(r.endDate).toLocaleDateString()}
+                    </Typography>
+                    <Box sx={{ mt: 0.5 }}>
+                      <Chip label={r.status} size="small" color={statusColors[r.status] || 'default'} />
+                    </Box>
+                  </Box>
+                  {r.status === 'pending' && (
+                    <Box sx={{ display: 'flex', gap: 0.5 }}>
+                      <Button size="small" color="success" startIcon={<CheckCircleOutlineOutlined />}
+                        onClick={() => handleRespond(r.id, 'confirmed')}>Accept</Button>
+                      <Button size="small" color="error" startIcon={<CancelOutlined />}
+                        onClick={() => handleRespond(r.id, 'declined')}>Decline</Button>
+                    </Box>
+                  )}
+                </Paper>
+              ))}
+            </Box>
+          )}
+        </>
       )}
 
       <Dialog open={!!deleteDialog} onClose={() => setDeleteDialog(null)}>

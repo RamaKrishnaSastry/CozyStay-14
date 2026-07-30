@@ -25,17 +25,18 @@ export default function AdminDashboard() {
   const [editUser, setEditUser] = useState<{ id: string; name: string; email: string; role: string } | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
-  const endpoints = [
-    () => adminApi.getStats().then(setStats),
-    () => userApi.getAll().then(setUsers),
-    () => adminApi.getListings().then(setListings),
-    () => adminApi.getBookings().then(setBookings),
-  ];
-
-  useEffect(() => {
+  const loadTab = (t: number) => {
     setLoading(true);
-    endpoints[tab]().finally(() => setLoading(false));
-  }, [tab]);
+    const tasks: Record<number, Promise<any>> = {
+      0: adminApi.getStats().then(setStats),
+      1: userApi.getAll().then(setUsers),
+      2: adminApi.getListings().then(setListings),
+      3: adminApi.getBookings().then(setBookings),
+    };
+    (tasks[t] || Promise.resolve()).finally(() => setLoading(false));
+  };
+
+  useEffect(() => { loadTab(tab); }, [tab]);
 
   const handleUpdateUser = async () => {
     if (!editUser) return;
@@ -52,36 +53,45 @@ export default function AdminDashboard() {
 
   const handleDeactivateListing = async (id: string) => {
     await adminApi.deleteListing(id);
-    setListings(listings.map(l => l.id === Number(id) ? { ...l, is_active: false } : l));
+    setListings(listings.map(l => l.id === id ? { ...l, isActive: false } : l));
   };
 
   const handleDeleteBooking = async (id: string) => {
     await adminApi.deleteBooking(id);
-    setBookings(bookings.filter(b => b.id !== Number(id)));
+    setBookings(bookings.filter(b => b.id !== id));
   };
 
   const tabs = ['Stats', 'Users', 'Listings', 'Bookings'];
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Typography variant="h5" sx={{ fontWeight: 700, mb: 3 }}>
-        Admin Dashboard
-      </Typography>
+      <Typography variant="h5" sx={{ fontWeight: 700, mb: 3 }}>Admin Dashboard</Typography>
 
       <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 3 }} textColor="primary" indicatorColor="primary">
         {tabs.map(t => <Tab key={t} label={t} />)}
       </Tabs>
 
-      {tab === 'stats' && stats && (
-        <div className="stats-grid">
-          <div className="stat-card"><h3>Users</h3><p>{stats.total_users}</p></div>
-          <div className="stat-card"><h3>Active Listings</h3><p>{stats.total_active_listings}</p></div>
-          <div className="stat-card"><h3>Bookings</h3><p>{stats.total_bookings}</p></div>
-        </div>
+      {loading && <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress /></Box>}
+
+      {!loading && tab === 0 && stats && (
+        <Grid container spacing={2}>
+          {[
+            { label: 'Total Users', value: stats.totalUsers },
+            { label: 'Active Listings', value: stats.totalActiveListings },
+            { label: 'Total Bookings', value: stats.totalBookings },
+          ].map((s) => (
+            <Grid key={s.label} size={{ xs: 12, sm: 4 }}>
+              <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
+                <Typography variant="h3" sx={{ fontWeight: 700, color: 'primary.main' }}>{s.value}</Typography>
+                <Typography variant="body2" color="text.secondary">{s.label}</Typography>
+              </Paper>
+            </Grid>
+          ))}
+        </Grid>
       )}
 
       {!loading && tab === 1 && (
-        <TableContainer component={Paper}>
+        <TableContainer component={Paper} sx={{ borderRadius: 2 }}>
           <Table>
             <TableHead>
               <TableRow>
@@ -128,34 +138,66 @@ export default function AdminDashboard() {
         </TableContainer>
       )}
 
-      {tab === 'listings' && (
-        <table className="admin-table">
-          <thead><tr><th>Title</th><th>Host</th><th>Price</th><th>Active</th><th>Actions</th></tr></thead>
-          <tbody>
-            {listings.map(l => (
-              <tr key={l.id}>
-                <td>{l.title}</td><td>{l.host_name}</td><td>${l.price_per_night}</td><td>{l.is_active ? 'Yes' : 'No'}</td>
-                <td>{l.is_active && <button onClick={() => handleDeleteListing(String(l.id))} className="btn-sm btn-danger">Deactivate</button>}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      {!loading && tab === 2 && (
+        <TableContainer component={Paper} sx={{ borderRadius: 2 }}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Title</TableCell>
+                <TableCell>Host</TableCell>
+                <TableCell>Price</TableCell>
+                <TableCell>Active</TableCell>
+                <TableCell>Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {listings.map(l => (
+                <TableRow key={l.id}>
+                  <TableCell>{l.title}</TableCell>
+                  <TableCell>{l.hostName}</TableCell>
+                  <TableCell>${l.pricePerNight}</TableCell>
+                  <TableCell><Chip label={l.isActive ? 'Yes' : 'No'} size="small" color={l.isActive ? 'success' : 'default'} /></TableCell>
+                  <TableCell>
+                    {l.isActive && (
+                      <Button size="small" color="error" startIcon={<DeleteOutlined />} onClick={() => handleDeactivateListing(l.id)}>
+                        Deactivate
+                      </Button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
 
-      {tab === 'bookings' && (
-        <table className="admin-table">
-          <thead><tr><th>Property</th><th>Guest</th><th>Dates</th><th>Status</th><th>Actions</th></tr></thead>
-          <tbody>
-            {bookings.map(b => (
-              <tr key={b.id}>
-                <td>{(b.property as any)?.title}</td><td>{b.guest?.name}</td>
-                <td>{new Date(b.start_date).toLocaleDateString()} — {new Date(b.end_date).toLocaleDateString()}</td>
-                <td>{b.status}</td>
-                <td><button onClick={() => handleDeleteBooking(String(b.id))} className="btn-sm btn-danger">Delete</button></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      {!loading && tab === 3 && (
+        <TableContainer component={Paper} sx={{ borderRadius: 2 }}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Property</TableCell>
+                <TableCell>Guest</TableCell>
+                <TableCell>Dates</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {bookings.map(b => (
+                <TableRow key={b.id}>
+                  <TableCell>{b.propertyTitle}</TableCell>
+                  <TableCell>{b.guestName}</TableCell>
+                  <TableCell>{new Date(b.startDate).toLocaleDateString()} — {new Date(b.endDate).toLocaleDateString()}</TableCell>
+                  <TableCell><Chip label={b.status} size="small" color={statusColors[b.status] || 'default'} /></TableCell>
+                  <TableCell>
+                    <Button size="small" color="error" startIcon={<DeleteOutlined />} onClick={() => setDeleteConfirm(b.id)}>Delete</Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
 
       <Dialog open={!!deleteConfirm} onClose={() => setDeleteConfirm(null)}>

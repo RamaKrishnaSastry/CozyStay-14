@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { memo } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Card, CardMedia, CardContent, Box, Typography, Chip,
@@ -9,24 +9,55 @@ interface Props {
   property: Property;
 }
 
-const FALLBACK_IMG = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300" fill="%23ddd"%3E%3Crect width="400" height="300"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" fill="%23999" font-size="18"%3ENo Image%3C/text%3E%3C/svg%3E';
-
-export default function PropertyCard({ property }: Props) {
-  const [imgError, setImgError] = useState(false);
+function PropertyCard({ property }: Props) {
   return (
-    <Link to={`/listings/${property.id}`} className="property-card">
-      <img
-        src={imgError || !property.photos[0] ? FALLBACK_IMG : property.photos[0]}
+    <Card
+      component={Link}
+      to={`/listings/${property.id}`}
+      sx={{
+        textDecoration: 'none', color: 'inherit', cursor: 'pointer',
+        '&:hover': { transform: 'translateY(-2px)' },
+        height: '100%', display: 'flex', flexDirection: 'column',
+      }}
+    >
+      <CardMedia
+        component="img"
+        height="200"
+        image={property.photos[0] || 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800'}
         alt={property.title}
-        className="property-card-img"
-        onError={() => setImgError(true)}
+        loading="lazy"
+        sx={{ objectFit: 'cover' }}
       />
-      <div className="property-card-body">
-        <h3>{property.title}</h3>
-        <p className="property-card-location">{property.location}</p>
-        <p className="property-card-price">${property.price_per_night} / night</p>
-      </div>
-    </Link>
+      <CardContent sx={{ pb: '12px !important', flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
+          <Typography variant="subtitle1" sx={{
+            fontWeight: 600, maxWidth: '70%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}>
+            {property.title}
+          </Typography>
+          {property.avgRating && (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
+              <Typography variant="body2" sx={{ fontWeight: 600 }}>★</Typography>
+              <Typography variant="body2" sx={{ fontWeight: 600 }}>{property.avgRating}</Typography>
+            </Box>
+          )}
+        </Box>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>{property.location}</Typography>
+        <Typography variant="body2" sx={{ mt: 'auto' }}>
+          <Box component="span" sx={{ fontWeight: 700 }}>${property.pricePerNight}</Box> night
+        </Typography>
+        {property.amenities && property.amenities.length > 0 && (
+          <Box sx={{ display: 'flex', gap: 0.5, mt: 1, flexWrap: 'wrap' }}>
+            {property.amenities.slice(0, 3).map((a) => (
+              <Chip key={a} label={a} size="small" variant="outlined" sx={{ fontSize: '0.7rem' }} />
+            ))}
+            {property.amenities.length > 3 && (
+              <Chip label={`+${property.amenities.length - 3}`} size="small" variant="outlined" sx={{ fontSize: '0.7rem' }} />
+            )}
+          </Box>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

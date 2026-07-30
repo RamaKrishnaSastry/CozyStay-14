@@ -6,17 +6,15 @@ import {
 } from '@mui/material';
 import { PersonAddOutlined } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
-import { CredentialResponse, GoogleLogin } from '@react-oauth/google';
 
 export default function Register() {
-  const { register, googleLogin } = useAuth();
+  const { register } = useAuth();
   const navigate = useNavigate();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('guest');
   const [error, setError] = useState('');
-  const [googleError, setGoogleError] = useState('');
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -29,44 +27,41 @@ export default function Register() {
     }
   };
 
-  const handleGoogleSuccess = async (response: CredentialResponse) => {
-    setGoogleError('');
-    try {
-      await googleLogin(response.credential!);
-      navigate('/');
-    } catch (err: any) {
-      setGoogleError(err.response?.data?.message || 'Google sign-in failed');
-    }
-  };
-
   return (
-    <div className="page auth-page">
-      <h1>Register</h1>
-      <form onSubmit={handleSubmit} className="auth-form">
-        {error && <div className="error">{error}</div>}
-        <input type="text" placeholder="Full Name" value={name} onChange={(e) => setName(e.target.value)} required />
-        <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-        <input type="password" placeholder="Password (min 6 chars)" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
-        <select value={role} onChange={(e) => setRole(e.target.value)}>
-          <option value="guest">Guest</option>
-          <option value="host">Host</option>
-        </select>
-        <button type="submit">Register</button>
-      </form>
+    <Container maxWidth="xs" sx={{ py: 4 }}>
+      <Paper sx={{ p: 4, borderRadius: 2 }}>
+        <Box sx={{ textAlign: 'center', mb: 3 }}>
+          <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>Create account</Typography>
+          <Typography variant="body2" color="text.secondary">Join CozyStay today</Typography>
+        </Box>
 
-      <div className="oauth-divider"><span>or</span></div>
+        <Box component="form" onSubmit={handleSubmit}>
+          {error && <Alert severity="error" sx={{ mb: 2, borderRadius: 1 }}>{error}</Alert>}
+          <TextField label="Full Name" fullWidth value={name}
+            onChange={(e) => setName(e.target.value)} required sx={{ mb: 2 }} />
+          <TextField label="Email" type="email" fullWidth value={email}
+            onChange={(e) => setEmail(e.target.value)} required sx={{ mb: 2 }} />
+          <TextField label="Password" type="password" fullWidth value={password}
+            onChange={(e) => setPassword(e.target.value)} required
+            slotProps={{ htmlInput: { minLength: 6 } }} sx={{ mb: 2 }} />
+          <FormControl fullWidth sx={{ mb: 3 }}>
+            <InputLabel>Role</InputLabel>
+            <Select value={role} label="Role" onChange={(e) => setRole(e.target.value)}>
+              <MenuItem value="guest">Guest</MenuItem>
+              <MenuItem value="host">Host</MenuItem>
+            </Select>
+          </FormControl>
+          <Button type="submit" variant="contained" fullWidth size="large" startIcon={<PersonAddOutlined />}>
+            Create Account
+          </Button>
+        </Box>
 
-      {googleError && <div className="error">{googleError}</div>}
-      <div className="google-btn-wrapper">
-        <GoogleLogin
-          onSuccess={handleGoogleSuccess}
-          onError={() => setGoogleError('Google sign-in failed')}
-          size="large"
-          text="signup_with"
-        />
-      </div>
-
-      <p>Already registered? <Link to="/login">Login</Link></p>
-    </div>
+        <Box sx={{ textAlign: 'center', mt: 3 }}>
+          <Typography variant="body2" color="text.secondary">
+            Already registered? <Link to="/login" style={{ color: 'inherit' }}>Sign in</Link>
+          </Typography>
+        </Box>
+      </Paper>
+    </Container>
   );
 }

@@ -1,6 +1,8 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
+import Box from '@mui/material/Box';
+import CircularProgress from '@mui/material/CircularProgress';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -40,34 +42,42 @@ export default function App() {
 
   return (
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-      <Navbar />
-      <main className="container">
-        <Routes>
-          <Route path="/" element={<Suspense fallback={<PageLoader />}><Home /></Suspense>} />
-          <Route path="/login" element={<Suspense fallback={<PageLoader />}><Login /></Suspense>} />
-          <Route path="/register" element={<Suspense fallback={<PageLoader />}><Register /></Suspense>} />
-          <Route path="/listings/:id" element={<Suspense fallback={<PageLoader />}><ListingDetail /></Suspense>} />
+      <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+        <Navbar />
+        <Box component="main" sx={{ flex: 1, pt: { xs: 7, sm: 8 } }}>
+          <Routes>
+            <Route path="/" element={<Suspense fallback={<PageLoader />}><Home /></Suspense>} />
+            <Route path="/login" element={<Suspense fallback={<PageLoader />}><Login /></Suspense>} />
+            <Route path="/register" element={<Suspense fallback={<PageLoader />}><Register /></Suspense>} />
+            <Route path="/listings/:id" element={<Suspense fallback={<PageLoader />}><ListingDetail /></Suspense>} />
 
-          <Route element={<ProtectedRoute />}>
-            <Route path="/listings/new" element={<Suspense fallback={<PageLoader />}><CreateListing /></Suspense>} />
-            <Route path="/listings/:id/edit" element={<Suspense fallback={<PageLoader />}><EditListing /></Suspense>} />
-            <Route path="/my-bookings" element={<Suspense fallback={<PageLoader />}><MyBookings /></Suspense>} />
-            <Route path="/messages" element={<Suspense fallback={<PageLoader />}><Messages /></Suspense>} />
-            <Route path="/messages/:id" element={<Suspense fallback={<PageLoader />}><Messages /></Suspense>} />
-            <Route path="/profile" element={<Suspense fallback={<PageLoader />}><Profile /></Suspense>} />
-          </Route>
+            <Route element={<ProtectedRoute />}>
+              <Route path="/listings/new" element={<Suspense fallback={<PageLoader />}><CreateListing /></Suspense>} />
+              <Route path="/listings/:id/edit" element={<Suspense fallback={<PageLoader />}><EditListing /></Suspense>} />
+              <Route path="/my-bookings" element={<Suspense fallback={<PageLoader />}><MyBookings /></Suspense>} />
+              <Route path="/messages" element={<Suspense fallback={<PageLoader />}><Messages /></Suspense>} />
+              <Route path="/messages/:id" element={<Suspense fallback={<PageLoader />}><Messages /></Suspense>} />
+              <Route path="/profile" element={<Suspense fallback={<PageLoader />}><Profile /></Suspense>} />
+            </Route>
 
-          <Route element={<ProtectedRoute allowedRoles={['host']} />}>
-            <Route path="/host/dashboard" element={<Suspense fallback={<PageLoader />}><HostDashboard /></Suspense>} />
-          </Route>
+            <Route element={<ProtectedRoute allowedRoles={['host']} />}>
+              <Route path="/host/dashboard" element={<Suspense fallback={<PageLoader />}><HostDashboard /></Suspense>} />
+            </Route>
 
-          <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
-            <Route path="/admin" element={<Suspense fallback={<PageLoader />}><AdminDashboard /></Suspense>} />
-          </Route>
+            <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+              <Route path="/admin" element={<Suspense fallback={<PageLoader />}><AdminDashboard /></Suspense>} />
+            </Route>
 
-          <Route path="*" element={<Suspense fallback={<PageLoader />}><NotFound /></Suspense>} />
-        </Routes>
-      </main>
+            <Route path="*" element={<Suspense fallback={<PageLoader />}><NotFound /></Suspense>} />
+          </Routes>
+        </Box>
+        <Footer />
+      </Box>
+      <AppTour
+        open={tourOpen}
+        onClose={() => setTourOpen(false)}
+        onComplete={() => localStorage.setItem('cozystay-tour-completed', 'true')}
+      />
     </GoogleOAuthProvider>
   );
 }

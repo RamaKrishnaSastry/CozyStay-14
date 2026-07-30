@@ -1,19 +1,23 @@
 import { useState, FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
-  Container, Paper, Typography, TextField, Button, Alert, Box,
+  Container, Paper, Typography, TextField, Button, Alert, Box, Divider,
 } from '@mui/material';
 import { LoginOutlined } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
-import { CredentialResponse, GoogleLogin } from '@react-oauth/google';
+
+const DEMO_CREDENTIALS = [
+  { label: 'Guest', email: 'guest@demo.com', password: 'demo123' },
+  { label: 'Host', email: 'host@demo.com', password: 'demo123' },
+  { label: 'Admin', email: 'admin@example.com', password: 'admin123' },
+];
 
 export default function Login() {
-  const { login, googleLogin } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [googleError, setGoogleError] = useState('');
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -26,39 +30,52 @@ export default function Login() {
     }
   };
 
-  const handleGoogleSuccess = async (response: CredentialResponse) => {
-    setGoogleError('');
+  const handleDemoLogin = async (e: string, p: string) => {
+    setEmail(e);
+    setPassword(p);
     try {
-      await googleLogin(response.credential!);
+      await login(e, p);
       navigate('/');
     } catch (err: any) {
-      setGoogleError(err.response?.data?.message || 'Google sign-in failed');
+      setError(err.response?.data?.message || 'Login failed');
     }
   };
 
   return (
-    <div className="page auth-page">
-      <h1>Login</h1>
-      <form onSubmit={handleSubmit} className="auth-form">
-        {error && <div className="error">{error}</div>}
-        <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-        <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-        <button type="submit">Login</button>
-      </form>
+    <Container maxWidth="xs" sx={{ py: 4 }}>
+      <Paper sx={{ p: 4, borderRadius: 2 }}>
+        <Box sx={{ textAlign: 'center', mb: 3 }}>
+          <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>Welcome back</Typography>
+          <Typography variant="body2" color="text.secondary">Sign in to continue</Typography>
+        </Box>
 
-      <div className="oauth-divider"><span>or</span></div>
+        <Box component="form" onSubmit={handleSubmit}>
+          {error && <Alert severity="error" sx={{ mb: 2, borderRadius: 1 }}>{error}</Alert>}
+          <TextField label="Email" type="email" fullWidth value={email}
+            onChange={(e) => setEmail(e.target.value)} required sx={{ mb: 2 }} />
+          <TextField label="Password" type="password" fullWidth value={password}
+            onChange={(e) => setPassword(e.target.value)} required sx={{ mb: 3 }} />
+          <Button type="submit" variant="contained" fullWidth size="large" startIcon={<LoginOutlined />}>
+            Sign In
+          </Button>
+        </Box>
 
-      {googleError && <div className="error">{googleError}</div>}
-      <div className="google-btn-wrapper">
-        <GoogleLogin
-          onSuccess={handleGoogleSuccess}
-          onError={() => setGoogleError('Google sign-in failed')}
-          size="large"
-          text="signin_with"
-        />
-      </div>
+        <Divider sx={{ my: 3 }}><Typography variant="caption" color="text.secondary">Demo accounts</Typography></Divider>
 
-      <p>No account? <Link to="/register">Register</Link></p>
-    </div>
+        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', justifyContent: 'center' }}>
+          {DEMO_CREDENTIALS.map((d) => (
+            <Button key={d.label} size="small" variant="outlined" onClick={() => handleDemoLogin(d.email, d.password)}>
+              {d.label}
+            </Button>
+          ))}
+        </Box>
+
+        <Box sx={{ textAlign: 'center', mt: 3 }}>
+          <Typography variant="body2" color="text.secondary">
+            No account? <Link to="/register" style={{ color: 'inherit' }}>Register</Link>
+          </Typography>
+        </Box>
+      </Paper>
+    </Container>
   );
 }
