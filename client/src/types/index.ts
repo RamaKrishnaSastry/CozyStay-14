@@ -7,27 +7,30 @@ export interface User {
 }
 
 export interface Property {
-  _id: string;
-  host: { _id: string; name: string; email?: string; profilePhoto?: string };
+  id: number;
+  host_id?: number;
+  host_name?: string;
+  host?: { id: number; name: string; email?: string; profilePhoto?: string };
   title: string;
   description: string;
-  pricePerNight: number;
+  price_per_night: number;
   location: string;
   photos: string[];
   amenities?: string[];
-  unavailableDates?: string[];
-  isActive: boolean;
-  createdAt: string;
+  is_active: boolean;
+  created_at: string;
 }
 
 export interface Booking {
-  _id: string;
-  property: Property;
-  guest: { _id: string; name: string; email: string };
-  startDate: string;
-  endDate: string;
-  status: 'pending' | 'confirmed' | 'declined';
-  createdAt: string;
+  id: number;
+  property_id?: number;
+  guest_id?: number;
+  property?: Property | { id: number; title: string };
+  guest?: { id: number; name: string; email: string };
+  start_date: string;
+  end_date: string;
+  status: 'pending' | 'confirmed' | 'declined' | 'paid';
+  created_at: string;
 }
 
 export interface AuthResponse {

@@ -23,9 +23,9 @@ export default function MyBookings() {
       ) : (
         <div className="booking-list">
           {bookings.map((b) => (
-            <div key={b._id} className={`booking-card status-${b.status}`}>
-              <Link to={`/listings/${b.property._id}`}><h3>{b.property.title}</h3></Link>
-              <p>{new Date(b.startDate).toLocaleDateString()} — {new Date(b.endDate).toLocaleDateString()}</p>
+            <div key={b.id} className={`booking-card status-${b.status}`}>
+              <Link to={`/listings/${b.property_id}`}><h3>{(b.property as any)?.title}</h3></Link>
+              <p>{new Date(b.start_date).toLocaleDateString()} — {new Date(b.end_date).toLocaleDateString()}</p>
               <p><strong>Status:</strong> {b.status}</p>
             </div>
           ))}
