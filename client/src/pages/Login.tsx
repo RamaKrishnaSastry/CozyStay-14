@@ -5,13 +5,15 @@ import {
 } from '@mui/material';
 import { LoginOutlined } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
+import { CredentialResponse, GoogleLogin } from '@react-oauth/google';
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, googleLogin } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [googleError, setGoogleError] = useState('');
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -24,54 +26,39 @@ export default function Login() {
     }
   };
 
+  const handleGoogleSuccess = async (response: CredentialResponse) => {
+    setGoogleError('');
+    try {
+      await googleLogin(response.credential!);
+      navigate('/');
+    } catch (err: any) {
+      setGoogleError(err.response?.data?.message || 'Google sign-in failed');
+    }
+  };
+
   return (
-    <Container maxWidth="xs" sx={{ py: 4 }}>
-      <Paper sx={{ p: 4 }}>
-        <Typography variant="h5" sx={{ fontWeight: 700, textAlign: 'center', mb: 0.5 }}>
-          Welcome back
-        </Typography>
-        <Typography variant="body2" sx={{ color: 'text.secondary', textAlign: 'center', mb: 3 }}>
-          Sign in to continue to CozyStay
-        </Typography>
+    <div className="page auth-page">
+      <h1>Login</h1>
+      <form onSubmit={handleSubmit} className="auth-form">
+        {error && <div className="error">{error}</div>}
+        <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+        <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+        <button type="submit">Login</button>
+      </form>
 
-        <Box component="form" onSubmit={handleSubmit}>
-          {error && <Alert severity="error" sx={{ mb: 2, borderRadius: 1 }}>{error}</Alert>}
-          <TextField
-            label="Email"
-            type="email"
-            fullWidth
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            sx={{ mb: 2 }}
-          />
-          <TextField
-            label="Password"
-            type="password"
-            fullWidth
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            sx={{ mb: 3 }}
-          />
-          <Button
-            type="submit"
-            variant="contained"
-            fullWidth
-            size="large"
-            startIcon={<LoginOutlined />}
-          >
-            Login
-          </Button>
-        </Box>
+      <div className="oauth-divider"><span>or</span></div>
 
-        <Typography variant="body2" sx={{ mt: 2, textAlign: 'center', color: 'text.secondary' }}>
-          No account?{' '}
-          <Link to="/register" style={{ color: '#FF385C', fontWeight: 600 }}>
-            Register
-          </Link>
-        </Typography>
-      </Paper>
-    </Container>
+      {googleError && <div className="error">{googleError}</div>}
+      <div className="google-btn-wrapper">
+        <GoogleLogin
+          onSuccess={handleGoogleSuccess}
+          onError={() => setGoogleError('Google sign-in failed')}
+          size="large"
+          text="signin_with"
+        />
+      </div>
+
+      <p>No account? <Link to="/register">Register</Link></p>
+    </div>
   );
 }

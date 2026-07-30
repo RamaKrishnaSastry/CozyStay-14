@@ -141,9 +141,43 @@ Reviews & ratings, amenity filters, host-managed availability calendar, in-app m
 - **Booking Request Form** — date pickers, confirm button
 - **My Bookings** (guest) — list of past/pending/confirmed bookings
 - **Host Dashboard** — host's own listings + incoming booking requests with accept/decline buttons
-- **Create/Edit Listing** — form for title, description, price, location, photo upload
+- **Create/Edit Listing** — form for title, description, price, location, photo URL entry
 
+## Tech Stack
 
+| Layer | Technology |
+|---|---|
+| Frontend | React 18 + TypeScript + Vite |
+| Backend | Flask (Python 3) |
+| Database | MySQL 8+ (local) |
+| ORM | SQLAlchemy + PyMySQL |
+| Auth | JWT (Flask-JWT-Extended) + Google OAuth |
+| Migration | Flask-Migrate (Alembic) |
+
+## Project Structure
+
+```
+CozyStay-14/
+├── client/                  # React + Vite frontend
+│   ├── src/
+│   │   ├── api/             # Axios API client
+│   │   ├── components/      # Navbar, PropertyCard, ProtectedRoute
+│   │   ├── context/         # AuthContext
+│   │   ├── pages/           # 11 page components
+│   │   ├── styles/          # Plain CSS
+│   │   └── types/           # TypeScript interfaces
+│   └── .env                 # VITE_GOOGLE_CLIENT_ID
+├── server/                  # Flask backend
+│   ├── app/
+│   │   ├── models/          # SQLAlchemy models (User, Property, Booking, Review)
+│   │   └── routes/          # auth, properties, bookings, users, admin
+│   ├── .env                 # DATABASE_URL, JWT secret, GOOGLE_CLIENT_ID
+│   ├── schema.sql           # MySQL CREATE TABLE statements
+│   └── seed.py              # Test data script
+├── TODO.md
+├── SETUP.md                 # Local development setup guide
+└── HISTORY.md               # Project changelog
+```
 
 ## 6. Data & Rules
 

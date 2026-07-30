@@ -1,7 +1,6 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
-import Box from '@mui/material/Box';
-import CircularProgress from '@mui/material/CircularProgress';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -26,6 +25,8 @@ const PageLoader = () => (
   </Box>
 );
 
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
+
 export default function App() {
   const [tourOpen, setTourOpen] = useState(false);
 
@@ -38,9 +39,9 @@ export default function App() {
   }, []);
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      <Navbar onStartTour={() => setTourOpen(true)} />
-      <Box component="main" sx={{ flex: 1, pt: { xs: 7, sm: 8 } }}>
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+      <Navbar />
+      <main className="container">
         <Routes>
           <Route path="/" element={<Suspense fallback={<PageLoader />}><Home /></Suspense>} />
           <Route path="/login" element={<Suspense fallback={<PageLoader />}><Login /></Suspense>} />
@@ -66,13 +67,7 @@ export default function App() {
 
           <Route path="*" element={<Suspense fallback={<PageLoader />}><NotFound /></Suspense>} />
         </Routes>
-      </Box>
-      <Footer />
-      <AppTour
-        open={tourOpen}
-        onClose={() => setTourOpen(false)}
-        onComplete={() => localStorage.setItem('cozystay-tour-completed', 'true')}
-      />
-    </Box>
+      </main>
+    </GoogleOAuthProvider>
   );
 }

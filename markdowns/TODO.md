@@ -57,44 +57,46 @@
 
 ---
 
-## ⬜ Up Next — Priority Order
+## ✅ Recently Completed
 
-### 1. Google OAuth Authentication
+### 1. Google OAuth Authentication (Skeleton)
 
-**Why:** Lets users sign in with their Google account, proving they're a real person (reduces fake accounts).
+**Status:** Backend + frontend code implemented. User needs to provide their Google Client ID.
 
 **Tasks:**
-- [ ] Create Google OAuth credentials (Google Cloud Console → APIs & Services → Credentials)
-- [ ] Install `passport`, `passport-google-oauth20` on backend
-- [ ] Add `googleId` field to User model
-- [ ] Create `GET /api/auth/google` and `GET /api/auth/google/callback` routes
-- [ ] On successful OAuth, generate JWT and redirect to frontend with token
-- [ ] Add "Sign in with Google" button on Login and Register pages
-- [ ] Handle case where email already exists (link accounts or error)
-- [ ] Test: sign in with Google → JWT received → protected routes work
+- [x] Install `google-auth` on backend
+- [x] Implement `POST /api/auth/google` route — verifies token, creates/finds user, returns JWT
+- [x] Add "Sign in with Google" button on Login and Register pages
+- [x] `GOOGLE_CLIENT_ID` config in `.env` (placeholder)
 
-**Acceptance:** User clicks "Sign in with Google", authorizes, gets redirected back, and is logged in with a new/existing account.
+### 2. Image Preview & Fallback ✓
+
+**Status:** URL-based image entry now shows live preview thumbnails. Broken images show SVG placeholder.
+
+**Tasks:**
+- [x] Live thumbnail preview when pasting photo URLs in Create/Edit listing forms
+- [x] Broken image fallback (SVG placeholder) on PropertyCard and ListingDetail
+- [x] Responsive CSS grid gallery on ListingDetail
 
 ---
 
-### 2. Image & Video Upload & Rendering
+## ⬜ Up Next — Priority Order
+
+### 1. Image & Video Upload (File Upload)
 
 **Why:** Currently photos are URL-based (user pastes links). Users should upload real files (images + videos).
 
 **Tasks:**
-- [ ] Configure Multer on backend (`server/src/middleware/upload.ts`)
+- [ ] Configure file upload on Flask backend (`app/routes/upload.py`)
   - [ ] Accept image types: jpg, png, webp, gif
   - [ ] Accept video types: mp4, webm, mov
   - [ ] File size limits (e.g. 10MB per file)
   - [ ] Store in `server/uploads/` with unique filenames
 - [ ] Create `POST /api/upload` route — accepts multipart/form-data, returns file URL
-- [ ] Serve `/uploads` statically (already partially set up)
+- [ ] Serve `/uploads` statically (Vite proxy already set up: `/uploads` → `localhost:5000`)
 - [ ] Update CreateListing page: file input (accept images + videos), preview before submit, upload to `/api/upload`, store returned URLs
 - [ ] Update EditListing page: same file upload flow
-- [ ] Update ListingDetail page:
-  - [ ] Render images with `<img>` (already works)
-  - [ ] Render videos with `<video>` controls
-  - [ ] Photo/video gallery (carousel or grid)
+- [ ] Update ListingDetail page: render videos with `<video>` controls
 - [ ] Update PropertyCard: show first image or video thumbnail
 
 **Acceptance:** Host can upload jpg/png/mp4 files from their computer; they appear on the listing page as images (rendered in `<img>`) or videos (playable in `<video>`).

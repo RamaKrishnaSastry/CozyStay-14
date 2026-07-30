@@ -93,8 +93,8 @@ export default function ListingDetail() {
       return;
     }
     try {
-      await bookingApi.create({ propertyId: id!, startDate, endDate });
-      setBookingSuccess('Booking request sent! The host will respond shortly.');
+      await bookingApi.create({ property_id: Number(id!), start_date: startDate, end_date: endDate });
+      setBookingSuccess('Booking request sent!');
       setStartDate('');
       setEndDate('');
     } catch (err: any) {
@@ -121,37 +121,19 @@ export default function ListingDetail() {
   if (!property) return <Container sx={{ py: 4 }}><Alert severity="warning">Listing not found</Alert></Container>;
 
   return (
-    <Container maxWidth="xl" sx={{ py: 3 }}>
-      <Grid container spacing={3}>
-        <Grid size={{ xs: 12, md: 8 }}>
-          <Box sx={{ borderRadius: 3, overflow: 'hidden', mb: 3 }}>
-            <Box
-              component="img"
-              src={property.photos[selectedPhoto]}
-              alt={property.title}
-              sx={{ width: '100%', height: { xs: 300, md: 450 }, objectFit: 'cover', display: 'block' }}
-            />
-            {property.photos.length > 1 && (
-              <Box sx={{ display: 'flex', gap: 1, mt: 1, overflowX: 'auto', pb: 0.5 }}>
-                {property.photos.map((photo, i) => (
-                  <Box
-                    key={i}
-                    component="img"
-                    src={photo}
-                    loading="lazy"
-                    onClick={() => setSelectedPhoto(i)}
-                    sx={{
-                      width: 80, height: 60, objectFit: 'cover', borderRadius: 1, cursor: 'pointer', flexShrink: 0,
-                      border: selectedPhoto === i ? '2px solid' : '2px solid transparent',
-                      borderColor: selectedPhoto === i ? 'primary.main' : 'transparent',
-                      opacity: selectedPhoto === i ? 1 : 0.6,
-                      '&:hover': { opacity: 1 },
-                    }}
-                  />
-                ))}
-              </Box>
-            )}
-          </Box>
+    <div className="page listing-detail">
+      <div className="listing-gallery">
+        {property.photos.map((photo, i) => (
+          <img key={i} src={photo} alt={`${property.title} ${i + 1}`}
+            onError={(e) => { (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="800" height="500" fill="%23eee"%3E%3Crect width="800" height="500"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" fill="%23999" font-size="20"%3EImage not available%3C/text%3E%3C/svg%3E'; }}
+          />
+        ))}
+      </div>
+      <h1>{property.title}</h1>
+      <p className="listing-location">{property.location}</p>
+      <p className="listing-price">${property.price_per_night} / night</p>
+      <p className="listing-host">Hosted by {property.host_name}</p>
+      <p>{property.description}</p>
 
           <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>{property.title}</Typography>
 

@@ -42,38 +42,11 @@ export default function MyBookings() {
       ) : (
         <Grid container spacing={2}>
           {bookings.map((b) => (
-            <Grid key={b.id} size={{ xs: 12 }}>
-              <Paper sx={{ display: 'flex', overflow: 'hidden' }}>
-                <Box
-                  component={Link}
-                  to={`/listings/${b.propertyId}`}
-                  sx={{ width: { xs: 120, sm: 200 }, minHeight: 140, flexShrink: 0, display: 'block' }}
-                >
-                  <Box
-                    component="img"
-                    src={b.propertyPhoto || ''}
-                    alt={b.propertyTitle}
-                    sx={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                  />
-                </Box>
-                <Box sx={{ p: 2, flex: 1 }}>
-                  <Typography
-                    variant="subtitle1"
-                    sx={{ fontWeight: 600, textDecoration: 'none', '&:hover': { color: 'primary.main' } }}
-                    component={Link}
-                    to={`/listings/${b.propertyId}`}
-                  >
-                    {b.propertyTitle}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                    {new Date(b.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} — {new Date(b.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                  </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
-                    <Chip label={b.status} size="small" color={statusColors[b.status] || 'default'} />
-                  </Box>
-                </Box>
-              </Paper>
-            </Grid>
+            <div key={b.id} className={`booking-card status-${b.status}`}>
+              <Link to={`/listings/${b.property_id}`}><h3>{(b.property as any)?.title}</h3></Link>
+              <p>{new Date(b.start_date).toLocaleDateString()} — {new Date(b.end_date).toLocaleDateString()}</p>
+              <p><strong>Status:</strong> {b.status}</p>
+            </div>
           ))}
         </Grid>
       )}

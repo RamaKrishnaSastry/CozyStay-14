@@ -6,15 +6,17 @@ import {
 } from '@mui/material';
 import { PersonAddOutlined } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
+import { CredentialResponse, GoogleLogin } from '@react-oauth/google';
 
 export default function Register() {
-  const { register } = useAuth();
+  const { register, googleLogin } = useAuth();
   const navigate = useNavigate();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('guest');
   const [error, setError] = useState('');
+  const [googleError, setGoogleError] = useState('');
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -27,70 +29,44 @@ export default function Register() {
     }
   };
 
+  const handleGoogleSuccess = async (response: CredentialResponse) => {
+    setGoogleError('');
+    try {
+      await googleLogin(response.credential!);
+      navigate('/');
+    } catch (err: any) {
+      setGoogleError(err.response?.data?.message || 'Google sign-in failed');
+    }
+  };
+
   return (
-    <Container maxWidth="xs" sx={{ py: 4 }}>
-      <Paper sx={{ p: 4 }}>
-        <Typography variant="h5" sx={{ fontWeight: 700, textAlign: 'center', mb: 0.5 }}>
-          Join CozyStay
-        </Typography>
-        <Typography variant="body2" sx={{ color: 'text.secondary', textAlign: 'center', mb: 3 }}>
-          Create your account and start exploring
-        </Typography>
+    <div className="page auth-page">
+      <h1>Register</h1>
+      <form onSubmit={handleSubmit} className="auth-form">
+        {error && <div className="error">{error}</div>}
+        <input type="text" placeholder="Full Name" value={name} onChange={(e) => setName(e.target.value)} required />
+        <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+        <input type="password" placeholder="Password (min 6 chars)" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
+        <select value={role} onChange={(e) => setRole(e.target.value)}>
+          <option value="guest">Guest</option>
+          <option value="host">Host</option>
+        </select>
+        <button type="submit">Register</button>
+      </form>
 
-        <Box component="form" onSubmit={handleSubmit}>
-          {error && <Alert severity="error" sx={{ mb: 2, borderRadius: 1 }}>{error}</Alert>}
-          <TextField
-            label="Full Name"
-            fullWidth
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-            sx={{ mb: 2 }}
-          />
-          <TextField
-            label="Email"
-            type="email"
-            fullWidth
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            sx={{ mb: 2 }}
-          />
-          <TextField
-            label="Password"
-            type="password"
-            fullWidth
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            slotProps={{ htmlInput: { minLength: 6 } }}
-            sx={{ mb: 2 }}
-          />
-          <FormControl fullWidth sx={{ mb: 3 }}>
-            <InputLabel>I want to</InputLabel>
-            <Select value={role} label="I want to" onChange={(e) => setRole(e.target.value)}>
-              <MenuItem value="guest">Book stays (Guest)</MenuItem>
-              <MenuItem value="host">Host properties (Host)</MenuItem>
-            </Select>
-          </FormControl>
-          <Button
-            type="submit"
-            variant="contained"
-            fullWidth
-            size="large"
-            startIcon={<PersonAddOutlined />}
-          >
-            Register
-          </Button>
-        </Box>
+      <div className="oauth-divider"><span>or</span></div>
 
-        <Typography variant="body2" sx={{ mt: 2, textAlign: 'center', color: 'text.secondary' }}>
-          Already registered?{' '}
-          <Link to="/login" style={{ color: '#FF385C', fontWeight: 600 }}>
-            Login
-          </Link>
-        </Typography>
-      </Paper>
-    </Container>
+      {googleError && <div className="error">{googleError}</div>}
+      <div className="google-btn-wrapper">
+        <GoogleLogin
+          onSuccess={handleGoogleSuccess}
+          onError={() => setGoogleError('Google sign-in failed')}
+          size="large"
+          text="signup_with"
+        />
+      </div>
+
+      <p>Already registered? <Link to="/login">Login</Link></p>
+    </div>
   );
 }
