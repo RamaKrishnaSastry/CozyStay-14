@@ -1,6 +1,6 @@
 # CozyStay — Backend Feature Division
 
-> **2 people, both on backend (Node.js + Express + MongoDB).**
+> **2 people, both on backend (Flask + MySQL).**
 >
 > Work is split by domain so each person owns independent feature sets with minimal file conflicts.
 >
@@ -15,19 +15,18 @@ The following is **already implemented** in `server/`. Both devs should read the
 
 | File | Status |
 |---|---|
-| `server/src/config/db.ts` | ✅ MongoDB connection |
-| `server/src/index.ts` | ✅ Express app, CORS, all routes registered |
-| `server/src/types/index.ts` | ✅ TypeScript types (AuthPayload, AuthRequest, UserRole, BookingStatus) |
-| `server/src/middleware/auth.ts` | ✅ JWT `protect` + role-based `authorize` middleware |
-| `server/src/models/User.ts` | ✅ User schema with bcrypt password hashing, `profilePhoto` field |
-| `server/src/models/Property.ts` | ✅ Property schema with `amenities`, `unavailableDates`, `isActive` fields |
-| `server/src/models/Booking.ts` | ✅ Booking schema with `status` enum, compound index on dates |
-| `server/src/models/Review.ts` | ✅ Review schema (model only — **no routes yet**) |
-| `server/src/routes/auth.ts` | ✅ Register, Login, Get Me |
-| `server/src/routes/properties.ts` | ✅ CRUD + search/filter (location, maxPrice, amenities) |
-| `server/src/routes/bookings.ts` | ✅ Create, My Bookings, Host Requests, Respond (accept/decline) |
-| `server/src/routes/admin.ts` | ✅ Admin stats, list all listings/bookings, delete |
-| `server/src/routes/users.ts` | ✅ Admin user management (list, get, update, delete) |
+| `server/app/__init__.py` | ✅ Flask app factory, CORS, JWT, DB init |
+| `server/app/config.py` | ✅ Config classes (MySQL URI, JWT secret, upload path) |
+| `server/app.py` | ✅ Entry point |
+| `server/app/models/user.py` | ✅ User model with password hashing |
+| `server/app/models/property.py` | ✅ Property model with JSON fields for photos/amenities |
+| `server/app/models/booking.py` | ✅ Booking model with status enum, composite index |
+| `server/app/models/review.py` | ✅ Review model (model only — **no routes yet**) |
+| `server/app/routes/auth.py` | ✅ Register, Login, Get Me |
+| `server/app/routes/properties.py` | ✅ CRUD + search/filter (location, max_price, amenities) |
+| `server/app/routes/bookings.py` | ✅ Create, My Bookings, Host Requests, Respond (accept/decline) |
+| `server/app/routes/admin.py` | ✅ Admin stats, list all listings/bookings, delete |
+| `server/app/routes/users.py` | ✅ Admin user management (list, get, update, delete) |
 
 ---
 
@@ -35,11 +34,13 @@ The following is **already implemented** in `server/`. Both devs should read the
 
 ### Files you own
 ```
-server/src/routes/reviews.ts     (new)
-server/src/routes/payments.ts    (new)
-server/src/middleware/validate.ts (new)
-server/src/lib/validations.ts    (new)
-server/src/lib/bookingOverlap.ts (new)
+server/app/routes/reviews.py     (new)
+server/app/routes/payments.py    (new)
+server/app/schemas/              (new directory)
+server/app/utils/
+├── __init__.py
+├── errors.py                    (error handlers)
+└── helpers.py                   (booking overlap, rating calc)
 ```
 
 ### A1: Reviews API (Nice-to-have #10)
@@ -50,17 +51,17 @@ server/src/lib/bookingOverlap.ts (new)
 
 | # | Task | Endpoint | Logic | Error Cases |
 |---|---|---|---|---|
-| A1.1 | Create review | `POST /api/reviews` | Body: `bookingId, rating (1-5), text (optional)`. Find booking. Verify: belongs to caller, `endDate` passed, status is `"paid"`. Check no existing review for this booking. Create review. Update property's `avgRating` and `reviewCount` (aggregate all reviews for that property). | Not your booking → 403. Too early (endDate not passed) → 400. Duplicate review → 409. |
-| A1.2 | Get listing reviews | `GET /api/reviews/:propertyId` | Find all reviews where `property = propertyId`. Populate guest name. Sort by `createdAt` desc. Return array + `{ avgRating, reviewCount }`. | Invalid propertyId → 400. |
-| A1.3 | Update Property model | Modify `server/src/models/Property.ts` | Add fields: `avgRating: Number (default: 0)`, `reviewCount: Number (default: 0)`. Update on every new review (A1.1) via aggregation pipeline. | — |
+| A1.1 | Create review | `POST /api/reviews` | Body: `booking_id, rating (1-5), text (optional)`. Find booking. Verify: belongs to caller, `end_date` passed, status is `"paid"`. Check no existing review for this booking. Create review. Update property's `avg_rating` and `review_count` (aggregate all reviews for that property). | Not your booking → 403. Too early (end_date not passed) → 400. Duplicate review → 409. |
+| A1.2 | Get listing reviews | `GET /api/reviews/:property_id` | Find all reviews where `property_id = property_id`. Join guest name. Sort by `created_at` desc. Return array + `{ avg_rating, review_count }`. | Invalid property_id → 400. |
+| A1.3 | Update Property model | Modify `server/app/models/property.py` | Add fields: `avg_rating: Float (default: 0)`, `review_count: Integer (default: 0)`. Update on every new review (A1.1) via aggregation. | — |
 
 **Files to create:**
-- `server/src/routes/reviews.ts`
-- `server/src/lib/ratingHelpers.ts` (helper to recalculate avgRating on Property)
+- `server/app/routes/reviews.py`
+- `server/app/utils/helpers.py` (rating calculation helpers)
 
-**File to modify:**
-- `server/src/models/Property.ts` (add avgRating, reviewCount)
-- `server/src/index.ts` (register `/api/reviews` route)
+**Files to modify:**
+- `server/app/models/property.py` (add avg_rating, review_count)
+- `server/app/__init__.py` (register `/api/reviews` blueprint)
 
 **Depends on:** Feature 4 (Booking must exist and be completed)
 
@@ -72,18 +73,16 @@ server/src/lib/bookingOverlap.ts (new)
 
 | # | Task | Endpoint | Logic | Error Cases |
 |---|---|---|---|---|
-| A2.1 | Mock charge | `POST /api/payments/pay` | Body: `bookingId, cardNumber, cardExpiry, cardCvc`. Find booking. Must be `status: "confirmed"` and `paymentStatus: "unpaid"`. Validate card number format (basic Luhn check or just check === `"4242424242424242"`). Compute `totalAmount` = nights × property.pricePerNight. Update booking: `status: "paid"`, `paymentStatus: "paid"`, `transactionId: mock_${Date.now()}`, `totalAmount`. Return `{ success: true, transactionId }`. | Booking not found → 404. Not confirmed → 400. Already paid → 400. Invalid card → 400 "Card declined". |
-| A2.2 | Get payment status | `GET /api/payments/:bookingId/status` | Return `{ status, paymentStatus, transactionId, totalAmount }` for a booking. Verify caller is guest or host of that booking. | Not authorized → 403. Not found → 404. |
-| A2.3 | Refund | `POST /api/payments/refund` | Body: `bookingId`. Find booking with `paymentStatus: "paid"`. Set `paymentStatus: "refunded"`, `status: "declined"`. Return updated. Admin only. | Not admin → 403. Not paid → 400. |
-
-**Stripe alternative (if you prefer):** Use Stripe test mode instead of mock. Install `stripe` npm package, use test key from `.env`. Create PaymentIntent on `/api/payments/create-payment-intent`, confirm on `/api/payments/confirm`. Stripe test card `4242 4242 4242 4242` always succeeds.
+| A2.1 | Mock charge | `POST /api/payments/pay` | Body: `booking_id, card_number, card_expiry, card_cvc`. Find booking. Must be `status: "confirmed"` and `payment_status: "unpaid"`. Validate card number format (basic Luhn check or just check === `"4242424242424242"`). Compute `total_amount` = nights × property.price_per_night. Update booking: `status: "paid"`, `payment_status: "paid"`, `transaction_id: mock_${timestamp}`, `total_amount`. Return `{ success, transaction_id }`. | Booking not found → 404. Not confirmed → 400. Already paid → 400. Invalid card → 400 "Card declined". |
+| A2.2 | Get payment status | `GET /api/payments/:booking_id/status` | Return `{ status, payment_status, transaction_id, total_amount }` for a booking. Verify caller is guest or host of that booking. | Not authorized → 403. Not found → 404. |
+| A2.3 | Refund | `POST /api/payments/refund` | Body: `booking_id`. Find booking with `payment_status: "paid"`. Set `payment_status: "refunded"`, `status: "declined"`. Return updated. Admin only. | Not admin → 403. Not paid → 400. |
 
 **Files to create:**
-- `server/src/routes/payments.ts`
-- `server/src/lib/paymentHelpers.ts` (Stripe client init or mock logic)
+- `server/app/routes/payments.py`
 
-**File to modify:**
-- `server/src/index.ts` (register `/api/payments` route)
+**Files to modify:**
+- `server/app/models/booking.py` (add payment_status, transaction_id, total_amount fields)
+- `server/app/__init__.py` (register `/api/payments` blueprint)
 
 **Depends on:** Feature 4 (booking must be confirmed)
 
@@ -91,24 +90,27 @@ server/src/lib/bookingOverlap.ts (new)
 
 ### A3: Input Validation & Error Handling (Feature 6 — Polish)
 
-**Goal:** All endpoints validate input with Zod, return consistent errors.
+**Goal:** All endpoints validate input with Marshmallow, return consistent errors.
 
 | # | Task | Details |
 |---|---|---|
-| A3.1 | Shared Zod schemas | Create `server/src/lib/validations.ts` with schemas for: `signupSchema`, `loginSchema`, `createPropertySchema`, `updatePropertySchema`, `createBookingSchema`, `createReviewSchema`, `mockPaymentSchema`. Export them. Each schema defines field types, required/optional, min/max lengths, custom error messages. |
-| A3.2 | Validation middleware | Create `server/src/middleware/validate.ts` — generic middleware `validate(schema)` that runs `schema.parse(req.body)` and catches Zod errors, returning `400 { error: "Validation failed", details: [{ field, message }] }`. |
-| A3.3 | Apply validation | Update ALL route files (`auth.ts`, `properties.ts`, `bookings.ts`, `admin.ts`, `users.ts`, `reviews.ts`, `payments.ts`) to use `validate(schema)` middleware on mutation endpoints (POST, PUT). |
-| A3.4 | Global error handler | In `server/src/index.ts`, add Express error middleware `(err, req, res, next)`. Handle: Mongoose `ValidationError` → 400, Mongoose `CastError` (invalid ObjectId) → 400, Mongoose duplicate key `11000` → 409, `JsonWebTokenError` → 401, `TokenExpiredError` → 401. Log stack in dev only. Return `{ error: message }`. |
-| A3.5 | MinPrice search | Update `server/src/routes/properties.ts` — add `minPrice` query param filter alongside existing `maxPrice`. Already supports: `location`, `maxPrice`, `amenities`. Add: `if (minPrice) filter.pricePerNight = { ...filter.pricePerNight, $gte: Number(minPrice) }`. |
+| A3.1 | Marshmallow schemas | Create `server/app/schemas/` with schemas for: `RegisterSchema`, `LoginSchema`, `PropertySchema`, `BookingSchema`, `ReviewSchema`, `PaymentSchema`. Each schema defines fields, required/optional, length validators, custom error messages. |
+| A3.2 | Validation decorator | Create `server/app/utils/errors.py` — decorator `@validate(schema)` that runs `schema.load(request.json)` and catches `ValidationError`, returning `400 { error: "Validation failed", details: [{ field, message }] }`. |
+| A3.3 | Apply validation | Update ALL route files to use `@validate(schema)` decorator on mutation endpoints (POST, PUT). |
+| A3.4 | Global error handler | In `server/app/__init__.py`, register `@app.errorhandler` for: `IntegrityError` (duplicate key) → 409, `404` → `{ error: "Not found" }`, `422` → validation errors. Return `{ error: message }`. |
+| A3.5 | Min_price search | Update `server/app/routes/properties.py` — add `min_price` query param filter alongside existing `max_price`. Already supports: `location`, `max_price`, `amenities`. Add: `if min_price: filter.append(Property.price_per_night >= float(min_price))`. |
 
 **Files to create:**
-- `server/src/lib/validations.ts`
-- `server/src/middleware/validate.ts`
+- `server/app/schemas/__init__.py`
+- `server/app/schemas/user.py`
+- `server/app/schemas/property.py`
+- `server/app/schemas/booking.py`
+- `server/app/utils/errors.py`
 
 **Files to modify:**
-- `server/src/index.ts` (add error middleware)
-- `server/src/routes/properties.ts` (add minPrice)
-- All route files (add validation middleware imports)
+- `server/app/__init__.py` (add error handlers)
+- `server/app/routes/properties.py` (add min_price)
+- All route files (add validation decorators)
 
 **Depends on:** Nothing — can be done in parallel with all features
 
@@ -120,10 +122,10 @@ server/src/lib/bookingOverlap.ts (new)
 
 | # | Task | Details |
 |---|---|---|
-| A4.1 | Overlap function | Create `server/src/lib/bookingOverlap.ts`. Export `async function checkOverlap(propertyId, startDate, endDate, excludeBookingId?)`: queries `Booking` for confirmed bookings where dates overlap. Returns conflicting booking or null. Takes optional `excludeBookingId` to skip the current booking during updates. |
-| A4.2 | Integrate | Use this in `bookings.ts` create route and in availability calendar checks. |
+| A4.1 | Overlap function | Add to `server/app/utils/helpers.py`. Function `check_overlap(property_id, start_date, end_date, exclude_booking_id=None)`: queries `Booking` for confirmed bookings where dates overlap. Returns conflicting booking or None. Takes optional `exclude_booking_id` to skip the current booking during updates. |
+| A4.2 | Integrate | Use this in `bookings.py` create route and in availability calendar checks. |
 
-**File to create:** `server/src/lib/bookingOverlap.ts`
+**File to modify:** `server/app/utils/helpers.py`
 
 **Depends on:** Nothing
 
@@ -133,11 +135,14 @@ server/src/lib/bookingOverlap.ts (new)
 
 ### Files you own
 ```
-server/src/routes/messages.ts         (new)
-server/src/routes/availability.ts     (new)
-server/src/routes/upload.ts           (new, or extend existing)
-server/src/middleware/upload.ts        (new)
-server/src/models/Message.ts          (new)
+server/app/routes/messages.py         (new)
+server/app/routes/availability.py     (new)
+server/app/routes/upload.py           (new)
+server/app/middleware/
+├── __init__.py
+├── auth.py                           (JWT decorators - already exists)
+└── upload.py                         (File upload helpers)
+server/app/models/message.py          (new)
 ```
 
 ### B1: In-App Messaging (Nice-to-have #13)
@@ -147,28 +152,29 @@ server/src/models/Message.ts          (new)
 **Data model:**
 ```
 Message {
-  senderId:   ObjectId (ref: User, required)
-  receiverId: ObjectId (ref: User, required)
-  listingId:  ObjectId (ref: Property, required)
-  text:       String (required, max 2000)
-  read:       Boolean (default: false)
-  createdAt:  Date (auto)
+  id:           INT PK AUTO_INCREMENT
+  sender_id:    INT FK → User
+  receiver_id:  INT FK → User
+  listing_id:   INT FK → Property
+  text:         TEXT (max 2000)
+  read:         BOOLEAN (default: false)
+  created_at:   DATETIME
 }
 ```
 
 | # | Task | Endpoint | Logic | Error Cases |
 |---|---|---|---|---|
-| B1.1 | Send message | `POST /api/messages` | Body: `listingId, text`. Find listing to get `hostId` (receiver). Sender = current user. Save message. Return 201 + message. Optionally set `receiverId` from body if guest messages guest (edge case) — default to host. | Listing not found → 404. Text empty → 400. |
-| B1.2 | Get conversation | `GET /api/messages/:listingId` | Return messages between current user and the other party for this listing. Find: `{ listingId, $or: [{senderId: user, receiverId: other}, {senderId: other, receiverId: user}] }`. Sort by `createdAt` asc. Mark unread messages as read (where `receiverId === currentUser`). Populate sender name for display. | Listing not found → 404. |
-| B1.3 | Get inbox | `GET /api/messages/inbox` | Return list of unique conversations for current user. Use aggregation pipeline: group by `listingId`, get latest message per group, count unread where `receiverId === currentUser && read === false`. Populate listing title + other user's name. Sort by most recent message. | — |
-| B1.4 | Mark as read | `PUT /api/messages/read/:listingId` | Mark all messages in a conversation where `receiverId === currentUser` as `read: true`. Return `{ modifiedCount }`. | — |
+| B1.1 | Send message | `POST /api/messages` | Body: `listing_id, text`. Find listing to get `host_id` (receiver). Sender = current user. Save message. Return 201 + message. | Listing not found → 404. Text empty → 400. |
+| B1.2 | Get conversation | `GET /api/messages/:listing_id` | Return messages between current user and the other party for this listing. Filter: `WHERE listing_id = ? AND ((sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?))`. Sort by `created_at` asc. Mark unread messages as read (where `receiver_id = current_user`). Return with sender name. | Listing not found → 404. |
+| B1.3 | Get inbox | `GET /api/messages/inbox` | Return list of unique conversations for current user. Use SQL GROUP BY `listing_id`, get latest message per group, count unread where `receiver_id = current_user AND read = false`. Join listing title + other user's name. Sort by most recent message. | — |
+| B1.4 | Mark as read | `PUT /api/messages/read/:listing_id` | Mark all messages in a conversation where `receiver_id = current_user` as `read = true`. Return `{ modified_count }`. | — |
 
 **Files to create:**
-- `server/src/models/Message.ts`
-- `server/src/routes/messages.ts`
+- `server/app/models/message.py`
+- `server/app/routes/messages.py`
 
-**File to modify:**
-- `server/src/index.ts` (register `/api/messages` route)
+**Files to modify:**
+- `server/app/__init__.py` (register `/api/messages` blueprint)
 
 **Depends on:** Feature 1 (auth), Feature 2 (listing exists)
 
@@ -178,23 +184,23 @@ Message {
 
 **Goal:** Hosts block dates. Booking form excludes blocked dates.
 
-**Property model already has `unavailableDates: [Date]`** — you only need routes.
+**Property model already has `unavailable_dates` JSON field** — you only need routes.
 
 | # | Task | Endpoint | Logic | Error Cases |
 |---|---|---|---|---|
-| B2.1 | Block dates | `POST /api/properties/:id/block-dates` | Body: `dates: ["YYYY-MM-DD", ...]`. Verify caller owns property. Add dates to `unavailableDates` array (using `$addToSet` to avoid duplicates). Return updated property. | Not owner → 403. Property not found → 404. Invalid date format → 400. |
-| B2.2 | Unblock dates | `DELETE /api/properties/:id/block-dates` | Body: `dates: ["YYYY-MM-DD", ...]`. Verify ownership. Remove dates from `unavailableDates` array (using `$pull`). Return updated property. | Not owner → 403. |
-| B2.3 | Get available dates | `GET /api/properties/:id/available-dates` | Return `{ unavailableDates: Date[], blockedRanges: [{start, end}] }`. Optionally compute next 90 days of availability, excluding blocked dates and existing confirmed bookings. Used by frontend to gray out dates on the DatePicker. | Property not found → 404. |
-| B2.4 | Extend overlap check | Update `server/src/routes/bookings.ts` | In create booking: also check that `startDate` and `endDate` do not fall on any date in `property.unavailableDates`. Return 409 if blocked. | — |
+| B2.1 | Block dates | `POST /api/properties/:id/block-dates` | Body: `dates: ["YYYY-MM-DD", ...]`. Verify caller owns property. Fetch property, add dates to `unavailable_dates` list (deduplicate). Save. Return updated property. | Not owner → 403. Property not found → 404. Invalid date format → 400. |
+| B2.2 | Unblock dates | `DELETE /api/properties/:id/block-dates` | Body: `dates: ["YYYY-MM-DD", ...]`. Verify ownership. Remove dates from `unavailable_dates` list. Save. Return updated property. | Not owner → 403. |
+| B2.3 | Get available dates | `GET /api/properties/:id/available-dates` | Return `{ unavailable_dates: [], blocked_ranges: [{start, end}] }`. Optionally compute next 90 days of availability, excluding blocked dates and existing confirmed bookings. | Property not found → 404. |
+| B2.4 | Extend overlap check | Update `server/app/routes/bookings.py` | In create booking: also check that `start_date` and `end_date` do not fall on any date in `property.unavailable_dates`. Return 409 if blocked. | — |
 
-**No new models needed.** Property model already has `unavailableDates`.
+**No new models needed.** Property model already has `unavailable_dates` JSON.
 
 **Files to create:**
-- `server/src/routes/availability.ts` (or add to `properties.ts`)
+- `server/app/routes/availability.py`
 
 **Files to modify:**
-- `server/src/routes/bookings.ts` (add blocked-date check)
-- `server/src/index.ts` (register routes if creating new file)
+- `server/app/routes/bookings.py` (add blocked-date check)
+- `server/app/__init__.py` (register routes if creating new file)
 
 **Depends on:** Feature 2 (property must exist), Feature 4 (booking overlap logic)
 
@@ -204,21 +210,21 @@ Message {
 
 **Goal:** Users upload a profile photo.
 
-**User model already has `profilePhoto` field** — you only need upload route.
+**User model already has `profile_photo` field** — you only need upload route.
 
 | # | Task | Endpoint | Logic | Error Cases |
 |---|---|---|---|---|
-| B3.1 | Multer config | `server/src/middleware/upload.ts` | Configure Multer: `storage: diskStorage`, destination `server/uploads/`, filename `Date.now() + '-' + randomUUID + ext`. File filter: only images (jpeg, png, webp). Size limit: 5MB. Export as `uploadSingle` middleware. | — |
-| B3.2 | Upload photo | `POST /api/users/profile-photo` | Use `uploadSingle('photo')`. Save file. Update `User.profilePhoto = /uploads/filename`. Return `{ url }`. | No file → 400. Wrong type → 400. Too large → 400. |
-| B3.3 | Serve uploads | Already done in `index.ts` | `app.use('/uploads', express.static(...))` already exists — verify it works. | — |
-| B3.4 | Get user profile | `GET /api/users/profile` | Return current user's data (name, email, role, profilePhoto). No admin needed — any logged-in user can view their own profile. | — |
+| B3.1 | Upload config | `server/app/middleware/upload.py` | Configure allowed extensions (jpeg, png, webp), size limit (5MB), save path `server/uploads/`, filename `timestamp_uuid.ext`. | — |
+| B3.2 | Upload photo | `POST /api/users/profile-photo` | Use `request.files['photo']`. Validate extension and size. Save file. Update `User.profile_photo = /uploads/filename`. Return `{ url }`. | No file → 400. Wrong type → 400. Too large → 400. |
+| B3.3 | Serve uploads | Already done in `app/__init__.py` | `app.static_folder = 'uploads'` or register static route. Verify it works. | — |
+| B3.4 | Get user profile | `GET /api/users/profile` | Return current user's data (name, email, role, profile_photo). Any logged-in user can view their own profile. | — |
 
-**File to create:**
-- `server/src/middleware/upload.ts`
+**Files to create:**
+- `server/app/middleware/upload.py`
 
 **Files to modify:**
-- `server/src/routes/users.ts` (add `/profile-photo` and `/profile` endpoints)
-- `server/src/index.ts` if needed
+- `server/app/routes/users.py` (add `/profile-photo` and `/profile` endpoints)
+- `server/app/__init__.py` if needed
 
 **Depends on:** Feature 1 (user must exist and be authenticated)
 
@@ -230,14 +236,14 @@ Message {
 
 | # | Task | Endpoint | Logic | Error Cases |
 |---|---|---|---|---|
-| B4.1 | Dashboard stats | Already exists at `GET /api/admin/stats` | Returns `{ totalUsers, totalActiveListings, totalBookings }`. Verify it works, add `totalRevenue` (sum of all paid booking `totalAmount`). | — |
-| B4.2 | Flag/report listing | `POST /api/admin/flag/:id` | Body: `reason`. Mark `Property.flagged = true`, `Property.flagReason = reason`. Use admin middleware. Return updated property. Add `flagged` and `flagReason` fields to Property model. | Not admin → 403. |
-| B4.3 | Unflag listing | `POST /api/admin/unflag/:id` | Set `flagged = false`, clear `flagReason`. | Not admin → 403. |
-| B4.4 | Add fields to Property | Modify `server/src/models/Property.ts` | Add: `flagged: Boolean (default: false)`, `flagReason: String`. | — |
+| B4.1 | Dashboard stats | Already exists at `GET /api/admin/stats` | Returns `{ total_users, total_active_listings, total_bookings }`. Verify it works, add `total_revenue` (sum of all paid booking `total_amount`). | — |
+| B4.2 | Flag/report listing | `POST /api/admin/flag/:id` | Body: `reason`. Mark `Property.flagged = true`, `Property.flag_reason = reason`. Use admin middleware. Return updated property. Add `flagged` and `flag_reason` fields to Property model. | Not admin → 403. |
+| B4.3 | Unflag listing | `POST /api/admin/unflag/:id` | Set `flagged = false`, clear `flag_reason`. | Not admin → 403. |
+| B4.4 | Add fields to Property | Modify `server/app/models/property.py` | Add: `flagged: Boolean (default: false)`, `flag_reason: String`. | — |
 
 **Files to modify:**
-- `server/src/routes/admin.ts` (add flag/unflag endpoints)
-- `server/src/models/Property.ts` (add flagged fields)
+- `server/app/routes/admin.py` (add flag/unflag endpoints)
+- `server/app/models/property.py` (add flagged fields)
 
 **Depends on:** Feature 1 (admin role)
 
@@ -249,14 +255,14 @@ Message {
 
 | # | Task | Details |
 |---|---|---|
-| B5.1 | Install express-rate-limit | `npm install express-rate-limit` |
+| B5.1 | Install flask-limiter | `pip install flask-limiter` |
 | B5.2 | Auth rate limit | Apply to auth routes: 10 login attempts / 15 min window, 5 signup attempts / 15 min window. Return 429 with `{ error: "Too many attempts, try later" }`. |
 | B5.3 | General rate limit | 100 requests / 15 min for general API. Apply after auth routes to avoid locking out login. |
-| B5.4 | Helmet | `npm install helmet`. Add `app.use(helmet())` in `index.ts` for security headers. |
+| B5.4 | Security headers | Add Flask-Talisman or simple `@app.after_request` to set `X-Content-Type-Options`, `X-Frame-Options`, etc. |
 
 **Files to modify:**
-- `server/src/index.ts` (add helmet and rate limiter)
-- `server/src/routes/auth.ts` (add auth-specific rate limiter)
+- `server/app/__init__.py` (add limiter and security headers)
+- `server/app/routes/auth.py` (add auth-specific rate limiter)
 
 **Depends on:** Nothing — can be done in parallel
 
@@ -266,30 +272,28 @@ Message {
 
 | File | Owner | Status |
 |---|---|---|
-| `server/src/index.ts` | 🔴/🔵 Both | ✅ Done, modify to register new routes |
-| `server/src/config/db.ts` | 🔵 B | ✅ Done |
-| `server/src/types/index.ts` | 🔴 A | ✅ Done |
-| `server/src/middleware/auth.ts` | 🔴 A | ✅ Done |
-| `server/src/middleware/validate.ts` | 🔴 A | ❌ New |
-| `server/src/middleware/upload.ts` | 🔵 B | ❌ New |
-| `server/src/models/User.ts` | 🔵 B | ✅ Done |
-| `server/src/models/Property.ts` | 🔴/🔵 Both | ✅ Done, both modify (A: avgRating, B: flagged) |
-| `server/src/models/Booking.ts` | 🔴 A | ✅ Done |
-| `server/src/models/Review.ts` | 🔴 A | ✅ Done (model exists, no routes) |
-| `server/src/models/Message.ts` | 🔵 B | ❌ New |
-| `server/src/routes/auth.ts` | 🔴 A | ✅ Done |
-| `server/src/routes/properties.ts` | 🔴 A | ✅ Done, needs minPrice |
-| `server/src/routes/bookings.ts` | 🔴 A | ✅ Done, needs overlap helper + blocked-date check |
-| `server/src/routes/admin.ts` | 🔵 B | ✅ Done, needs flag/unflag |
-| `server/src/routes/users.ts` | 🔵 B | ✅ Done, needs profile-photo + profile |
-| `server/src/routes/reviews.ts` | 🔴 A | ❌ New |
-| `server/src/routes/payments.ts` | 🔴 A | ❌ New |
-| `server/src/routes/messages.ts` | 🔵 B | ❌ New |
-| `server/src/routes/availability.ts` | 🔵 B | ❌ New |
-| `server/src/lib/validations.ts` | 🔴 A | ❌ New |
-| `server/src/lib/bookingOverlap.ts` | 🔴 A | ❌ New |
-| `server/src/lib/paymentHelpers.ts` | 🔴 A | ❌ New |
-| `server/src/lib/ratingHelpers.ts` | 🔴 A | ❌ New |
+| `server/app/__init__.py` | 🔴/🔵 Both | ✅ Done, modify to register new blueprints |
+| `server/app/config.py` | 🔵 B | ✅ Done |
+| `server/app.py` | 🔵 B | ✅ Done |
+| `server/app/middleware/auth.py` | 🔴 A | ✅ Done |
+| `server/app/middleware/upload.py` | 🔵 B | ❌ New |
+| `server/app/models/user.py` | 🔵 B | ✅ Done |
+| `server/app/models/property.py` | 🔴/🔵 Both | ✅ Done, both modify (A: avg_rating, B: flagged) |
+| `server/app/models/booking.py` | 🔴 A | ✅ Done |
+| `server/app/models/review.py` | 🔴 A | ✅ Done (model exists, no routes) |
+| `server/app/models/message.py` | 🔵 B | ❌ New |
+| `server/app/routes/auth.py` | 🔴 A | ✅ Done |
+| `server/app/routes/properties.py` | 🔴 A | ✅ Done, needs min_price |
+| `server/app/routes/bookings.py` | 🔴 A | ✅ Done, needs overlap helper + blocked-date check |
+| `server/app/routes/admin.py` | 🔵 B | ✅ Done, needs flag/unflag |
+| `server/app/routes/users.py` | 🔵 B | ✅ Done, needs profile-photo + profile |
+| `server/app/routes/reviews.py` | 🔴 A | ❌ New |
+| `server/app/routes/payments.py` | 🔴 A | ❌ New |
+| `server/app/routes/messages.py` | 🔵 B | ❌ New |
+| `server/app/routes/availability.py` | 🔵 B | ❌ New |
+| `server/app/schemas/` | 🔴 A | ❌ New |
+| `server/app/utils/errors.py` | 🔴 A | ❌ New |
+| `server/app/utils/helpers.py` | 🔴 A | ❌ New |
 
 ---
 
@@ -311,7 +315,7 @@ Message {
      │  A2: Payments   │          │  B2: Availability  │
      │  A3: Validation │          │  B3: Profile Photo │
      │  A4: Overlap    │          │  B4: Admin Enhance │
-     │  (minPrice fix) │          │  B5: Rate Limiting │
+     │  (min_price fix)│          │  B5: Rate Limiting │
      └────────┬────────┘          └─────────┬─────────┘
               │                             │
               └──────────┬──────────────────┘
@@ -328,9 +332,9 @@ Message {
 
 | Sprint | Dev A (Core) | Dev B (Extended) |
 |---|---|---|
-| **Sprint 1** | A4: Booking overlap helper. A3: Zod validation schemas + validate middleware. Apply validation to existing routes. Add global error handler in `index.ts`. Add `minPrice` to properties search. | B3: Multer config + profile photo upload route. B5: Install helmet + express-rate-limit, apply to auth and general routes. |
-| **Sprint 2** | A1: Reviews routes + rating helpers. Update Property model with avgRating/reviewCount. Register `/api/reviews` in index. | B1: Message model + routes (send, conversation, inbox, mark read). Register `/api/messages`. |
-| **Sprint 3** | A2: Mock payment routes (pay, status, refund). Payment helpers. Register `/api/payments`. Install Stripe (optional). | B2: Availability routes (block/unblock/get dates). Update booking route to check blocked dates. Register routes. |
+| **Sprint 1** | A4: Booking overlap helper. A3: Marshmallow validation schemas + validate decorator. Apply validation to existing routes. Add global error handler in `__init__.py`. Add `min_price` to properties search. | B3: File upload config + profile photo upload route. B5: Install flask-limiter, apply to auth and general routes. Add security headers. |
+| **Sprint 2** | A1: Reviews routes + rating helpers. Update Property model with avg_rating/review_count. Register `/api/reviews` blueprint. | B1: Message model + routes (send, conversation, inbox, mark read). Register `/api/messages` blueprint. |
+| **Sprint 3** | A2: Mock payment routes (pay, status, refund). Update Booking model with payment fields. Register `/api/payments` blueprint. | B2: Availability routes (block/unblock/get dates). Update booking route to check blocked dates. Register routes. |
 | **Sprint 4** | Integration testing. Fix bugs. Ensure all endpoints return consistent error shapes. | B4: Admin flag/unflag endpoints. Update Property model. Test all admin flows. |
 | **Sprint 5+** | Stripe real integration (optional). Payment webhooks (optional). | Any remaining polish. Documentation. |
 
@@ -342,11 +346,11 @@ Both devs share a single API contract document. When one person adds a new endpo
 
 | Method | Path | Auth | Request Body / Query | Response | Errors | Owner |
 |---|---|---|---|---|---|---|
-| POST | /api/reviews | Guest | `{ bookingId, rating, text? }` | `{ review }` | 400, 403, 409 | 🔴 A |
-| GET | /api/reviews/:propertyId | No | — | `{ reviews[], avgRating, reviewCount }` | 400 | 🔴 A |
-| POST | /api/payments/pay | Guest | `{ bookingId, cardNumber, cardExpiry, cardCvc }` | `{ success, transactionId }` | 400, 404 | 🔴 A |
-| POST | /api/messages | Auth | `{ listingId, text }` | `{ message }` | 400, 404 | 🔵 B |
-| GET | /api/messages/:listingId | Auth | — | `{ messages[] }` | 404 | 🔵 B |
+| POST | /api/reviews | Guest | `{ booking_id, rating, text? }` | `{ review }` | 400, 403, 409 | 🔴 A |
+| GET | /api/reviews/:property_id | No | — | `{ reviews[], avg_rating, review_count }` | 400 | 🔴 A |
+| POST | /api/payments/pay | Guest | `{ booking_id, card_number }` | `{ success, transaction_id }` | 400, 404 | 🔴 A |
+| POST | /api/messages | Auth | `{ listing_id, text }` | `{ message }` | 400, 404 | 🔵 B |
+| GET | /api/messages/:listing_id | Auth | — | `{ messages[] }` | 404 | 🔵 B |
 | GET | /api/messages/inbox | Auth | — | `{ conversations[] }` | — | 🔵 B |
 | POST | /api/properties/:id/block-dates | Host | `{ dates: ["YYYY-MM-DD"] }` | `{ property }` | 403, 404 | 🔵 B |
 | DELETE | /api/properties/:id/block-dates | Host | `{ dates: ["YYYY-MM-DD"] }` | `{ property }` | 403, 404 | 🔵 B |
@@ -380,6 +384,6 @@ git push origin feature/reviews-payments-validation
 ```
 
 **Conflict zones** (coordinate before editing):
-- `server/src/index.ts` — both will register new routes. Communicate which line each adds.
-- `server/src/models/Property.ts` — Dev A adds `avgRating`/`reviewCount`, Dev B adds `flagged`/`flagReason`. Coordinate field additions.
-- `server/src/routes/bookings.ts` — Dev A adds validation, Dev B adds blocked-date check. Communicate changes.
+- `server/app/__init__.py` — both will register new blueprints. Communicate which line each adds.
+- `server/app/models/property.py` — Dev A adds `avg_rating`/`review_count`, Dev B adds `flagged`/`flag_reason`. Coordinate field additions.
+- `server/app/routes/bookings.py` — Dev A adds validation, Dev B adds blocked-date check. Communicate changes.
