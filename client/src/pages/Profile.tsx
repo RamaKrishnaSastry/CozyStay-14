@@ -2,8 +2,8 @@ import { useState } from 'react';
 import {
   Container, Typography, Box, Paper, Avatar, TextField, Button, Alert, Grid,
 } from '@mui/material';
-import { PhotoCameraOutlined } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
+import PhotoUploader from '../components/PhotoUploader';
 
 export default function Profile() {
   const { user } = useAuth();
@@ -50,12 +50,13 @@ export default function Profile() {
             <TextField label="Email" fullWidth value={user.email} disabled size="small" />
           </Grid>
           <Grid size={{ xs: 12 }}>
-            <TextField label="Profile Photo URL" fullWidth value={photoUrl}
-              onChange={(e) => setPhotoUrl(e.target.value)} size="small"
-              placeholder="https://example.com/photo.jpg"
-              slotProps={{
-                input: { startAdornment: <PhotoCameraOutlined sx={{ mr: 1, color: 'text.secondary' }} /> },
-              }}
+            <Typography variant="subtitle2" sx={{ mb: 0.5, fontWeight: 600 }}>Profile Photo</Typography>
+            <PhotoUploader
+              value={photoUrl ? [photoUrl] : []}
+              onChange={(urls) => setPhotoUrl(urls[0] || '')}
+              max={1}
+              multiple={false}
+              label="Upload photo (mock upload, no platform)"
             />
           </Grid>
         </Grid>

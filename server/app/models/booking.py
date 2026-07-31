@@ -12,10 +12,17 @@ class Booking(db.Model):
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
 
     def to_dict(self):
+        prop = self.property if hasattr(self, 'property') else None
+        guest = self.guest if hasattr(self, 'guest') else None
         return {
             'id': self.id,
             'property_id': self.property_id,
+            'property_title': prop.title if prop else None,
+            'property_photo': (prop.photos or [None])[0] if prop else None,
             'guest_id': self.guest_id,
+            'guest_name': guest.name if guest else None,
+            'host_id': prop.host_id if prop else None,
+            'host_name': prop.host.name if prop and prop.host else None,
             'start_date': self.start_date.isoformat() if self.start_date else None,
             'end_date': self.end_date.isoformat() if self.end_date else None,
             'status': self.status,

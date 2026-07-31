@@ -11,11 +11,14 @@ class Review(db.Model):
     text = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
 
+    user = db.relationship('User', backref='reviews', lazy='joined')
+
     def to_dict(self):
         return {
             'id': self.id,
             'booking_id': self.booking_id,
             'user_id': self.user_id,
+            'user_name': self.user.name if self.user else None,
             'property_id': self.property_id,
             'rating': self.rating,
             'text': self.text,

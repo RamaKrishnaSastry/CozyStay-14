@@ -6,33 +6,21 @@ import {
 import { SaveOutlined } from '@mui/icons-material';
 import { propertyApi } from '../api';
 import { Property } from '../types';
-import MediaItem from '../components/MediaItem';
+import PhotoUploader from '../components/PhotoUploader';
 
 const ALL_AMENITIES = [
   'WiFi', 'Pool', 'AC', 'Kitchen', 'Parking', 'Beach Access', 'Pet Friendly',
   'Gym', 'Fireplace', 'Bonfire', 'Jacuzzi', 'Breakfast', 'Garden', 'Hiking',
 ];
 
-function PhotoPreview({ urls }: { urls: string[] }) {
-  if (urls.length === 0) return null;
-  return (
-    <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
-      {urls.map((url, i) => (
-        <MediaItem key={i} src={url} alt={`Preview ${i + 1}`} sx={{ width: 80, height: 60, objectFit: 'cover', borderRadius: 1 }} />
-      ))}
-    </Box>
-  );
-}
-
 export default function EditListing() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ title: '', description: '', pricePerNight: '', location: '', photos: '' });
+  const [form, setForm] = useState({ title: '', description: '', pricePerNight: '', location: '' });
+  const [photos, setPhotos] = useState<string[]>([]);
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
-
-  const photoUrls = form.photos.split('\n').map(s => s.trim()).filter(Boolean);
 
   useEffect(() => {
     if (!id) return;
@@ -42,8 +30,8 @@ export default function EditListing() {
         description: p.description,
         pricePerNight: String(p.pricePerNight),
         location: p.location,
-        photos: p.photos.join('\n'),
       });
+      setPhotos(p.photos || []);
       setSelectedAmenities(p.amenities || []);
     }).catch(() => navigate('/')).finally(() => setLoading(false));
   }, [id, navigate]);
@@ -51,13 +39,17 @@ export default function EditListing() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
+    if (photos.length === 0) {
+      setError('Add at least one photo.');
+      return;
+    }
     try {
       await propertyApi.update(id!, {
         title: form.title,
         description: form.description,
         pricePerNight: Number(form.pricePerNight),
         location: form.location,
-        photos: photoUrls,
+        photos,
         amenities: selectedAmenities,
       });
       navigate(`/listings/${id}`);
@@ -84,9 +76,7 @@ export default function EditListing() {
           <TextField label="Description" fullWidth multiline rows={4} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} required sx={{ mb: 2 }} />
           <TextField label="Price per night ($)" type="number" fullWidth value={form.pricePerNight} onChange={(e) => setForm({ ...form, pricePerNight: e.target.value })} required slotProps={{ htmlInput: { min: 0 } }} sx={{ mb: 2 }} />
           <TextField label="Location" fullWidth value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} required sx={{ mb: 2 }} />
-          <TextField label="Photo URLs (one per line)" fullWidth multiline rows={3} value={form.photos} onChange={(e) => setForm({ ...form, photos: e.target.value })} required sx={{ mb: 2 }} />
-
-          <PhotoPreview urls={photoUrls} />
+          <PhotoUploader value={photos} onChange={setPhotos} label="Upload photos (mock upload, no platform)" />
 
           <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>Amenities</Typography>
           <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mb: 3 }}>

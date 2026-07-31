@@ -10,10 +10,11 @@ import {
   PetsOutlined, ElevatorOutlined, FireplaceOutlined, DeckOutlined,
   EventBusyOutlined,
 } from '@mui/icons-material';
-import { propertyApi, bookingApi } from '../api';
-import { Property } from '../types';
+import { propertyApi, bookingApi, reviewApi } from '../api';
+import { Property, Review } from '../types';
 import { useAuth } from '../context/AuthContext';
 import MediaItem from '../components/MediaItem';
+import ContactRequestButton from '../components/ContactRequestButton';
 
 const amenityIcons: Record<string, React.ReactNode> = {
   WiFi: <WifiOutlined fontSize="small" />, AC: <AcUnitOutlined fontSize="small" />,
@@ -35,6 +36,9 @@ export default function ListingDetail() {
   const [bookingError, setBookingError] = useState('');
   const [bookingSuccess, setBookingSuccess] = useState('');
   const [selectedPhoto, setSelectedPhoto] = useState(0);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviewForm, setReviewForm] = useState({ rating: 5, text: '' });
+  const [reviewError, setReviewError] = useState('');
 
   useEffect(() => {
     if (!id) return;
@@ -43,6 +47,12 @@ export default function ListingDetail() {
       .then(setProperty)
       .catch(() => setProperty(null))
       .finally(() => setLoading(false));
+  }, [id]);
+
+  useEffect(() => {
+    if (id) {
+      reviewApi.getByProperty(id).then(setReviews).catch(() => {});
+    }
   }, [id]);
 
   const totalNights = useMemo(() =>
@@ -140,7 +150,78 @@ export default function ListingDetail() {
               </Grid>
             ))}
           </Grid>
-        </Grid>
+          </Grid>
+
+          {/* Reviews Section */}
+          <Box sx={{ mb: 4 }}>
+            <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+              Reviews {property.reviewCount ? `(${property.reviewCount})` : ''}
+            </Typography>
+            {reviews.length === 0 ? (
+              <Typography variant="body2" color="text.secondary">No reviews yet.</Typography>
+            ) : (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {reviews.map((r) => (
+                  <Paper key={r.id} elevation={0} sx={{ p: 2, bgcolor: 'action.hover', borderRadius: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
+                      <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontSize: '0.85rem' }}>
+                        {r.userName?.charAt(0) || '?'}
+                      </Avatar>
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>{r.userName}</Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {new Date(r.createdAt).toLocaleDateString()}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ ml: 'auto' }}>
+                        <Rating value={r.rating} readOnly size="small" />
+                      </Box>
+                    </Box>
+                    <Typography variant="body2" color="text.secondary">{r.text}</Typography>
+                  </Paper>
+                ))}
+              </Box>
+            )}
+
+            {user?.role === 'guest' && (
+              <Paper elevation={0} sx={{ p: 2, mt: 2, bgcolor: 'action.hover', borderRadius: 2 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>Leave a Review</Typography>
+                {reviewError && <Alert severity="error" sx={{ mb: 1, borderRadius: 1 }}>{reviewError}</Alert>}
+                <Box sx={{ mb: 1 }}>
+                  <Rating
+                    value={reviewForm.rating}
+                    onChange={(_, v) => setReviewForm((p) => ({ ...p, rating: v || 5 }))}
+                  />
+                </Box>
+                <TextField
+                  fullWidth multiline rows={2} size="small" placeholder="Share your experience..."
+                  value={reviewForm.text}
+                  onChange={(e) => setReviewForm((p) => ({ ...p, text: e.target.value }))}
+                  sx={{ mb: 1 }}
+                />
+                <Button
+                  variant="contained" size="small"
+                  onClick={async () => {
+                    setReviewError('');
+                    try {
+                      const newReview = await reviewApi.create({
+                        bookingId: `b-${Date.now()}`,
+                        propertyId: id!,
+                        rating: reviewForm.rating,
+                        text: reviewForm.text,
+                      });
+                      setReviews((prev) => [newReview, ...prev]);
+                      setReviewForm({ rating: 5, text: '' });
+                    } catch (err: any) {
+                      setReviewError(err.response?.data?.message || 'Failed to submit review');
+                    }
+                  }}
+                >
+                  Submit Review
+                </Button>
+              </Paper>
+            )}
+          </Box>
 
         {/* Booking Card */}
         <Grid size={{ xs: 12, md: 4 }}>
@@ -193,6 +274,8 @@ export default function ListingDetail() {
                 Switch to a guest account to book stays.
               </Alert>
             )}
+
+            <ContactRequestButton propertyId={property.id} hostId={property.hostId} />
           </Paper>
         </Grid>
       </Grid>

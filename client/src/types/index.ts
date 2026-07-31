@@ -54,6 +54,56 @@ export interface Review {
   createdAt: string;
 }
 
+export interface ContactRequest {
+  id: string;
+  propertyId: string;
+  propertyTitle?: string;
+  guestId: string;
+  guestName: string;
+  hostId: string;
+  hostName?: string;
+  status: 'pending' | 'approved' | 'declined';
+  message?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface Message {
+  id: string;
+  contactRequestId: string;
+  senderId: string;
+  senderName: string;
+  text: string;
+  createdAt: string;
+  readAt?: string;
+  deleted?: boolean;
+}
+
+export interface Notification {
+  id: string;
+  userId: string;
+  type: 'contact_request' | 'message' | 'system';
+  referenceId: string;
+  title: string;
+  message: string;
+  read: boolean;
+  actionUrl?: string;
+  createdAt: string;
+}
+
+export interface Conversation {
+  id: string;
+  contactRequestId: string;
+  withUserId: string;
+  withUserName: string;
+  withUserPhoto: string;
+  propertyTitle: string;
+  propertyId: string;
+  lastMessage?: string;
+  lastMessageAt?: string;
+  unread: number;
+}
+
 export interface AuthResponse {
   token: string;
   user: User;

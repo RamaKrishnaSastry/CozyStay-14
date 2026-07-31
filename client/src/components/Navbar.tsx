@@ -12,6 +12,7 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
 import { useThemeMode } from '../context/ThemeContext';
+import NotificationBell from './NotificationBell';
 
 interface Props {
   onStartTour?: () => void;
@@ -102,6 +103,8 @@ export default function Navbar({ onStartTour }: Props) {
               Tour
             </Button>
           )}
+
+          <NotificationBell />
 
           <IconButton onClick={toggleDarkMode} size="small" sx={{ color: 'text.secondary' }}>
             {darkMode ? <LightModeOutlined /> : <DarkModeOutlined />}

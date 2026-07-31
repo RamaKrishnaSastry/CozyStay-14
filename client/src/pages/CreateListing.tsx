@@ -5,23 +5,12 @@ import {
 } from '@mui/material';
 import { AddPhotoAlternateOutlined } from '@mui/icons-material';
 import { propertyApi } from '../api';
-import MediaItem from '../components/MediaItem';
+import PhotoUploader from '../components/PhotoUploader';
 
 const ALL_AMENITIES = [
   'WiFi', 'Pool', 'AC', 'Kitchen', 'Parking', 'Beach Access', 'Pet Friendly',
   'Gym', 'Fireplace', 'Bonfire', 'Jacuzzi', 'Breakfast', 'Garden', 'Hiking',
 ];
-
-function PhotoPreview({ urls }: { urls: string[] }) {
-  if (urls.length === 0) return null;
-  return (
-    <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
-      {urls.map((url, i) => (
-        <MediaItem key={i} src={url} alt={`Preview ${i + 1}`} sx={{ width: 80, height: 60, objectFit: 'cover', borderRadius: 1 }} />
-      ))}
-    </Box>
-  );
-}
 
 export default function CreateListing() {
   const navigate = useNavigate();
@@ -29,22 +18,24 @@ export default function CreateListing() {
   const [description, setDescription] = useState('');
   const [pricePerNight, setPricePerNight] = useState('');
   const [location, setLocation] = useState('');
-  const [photos, setPhotos] = useState('');
+  const [photos, setPhotos] = useState<string[]>([]);
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
   const [error, setError] = useState('');
-
-  const photoUrls = photos.split('\n').map(s => s.trim()).filter(Boolean);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
+    if (photos.length === 0) {
+      setError('Add at least one photo.');
+      return;
+    }
     try {
       const property = await propertyApi.create({
         title,
         description,
         pricePerNight: Number(pricePerNight),
         location,
-        photos: photoUrls,
+        photos,
         amenities: selectedAmenities,
       });
       navigate(`/listings/${property.id}`);
@@ -69,9 +60,7 @@ export default function CreateListing() {
           <TextField label="Description" fullWidth multiline rows={4} value={description} onChange={(e) => setDescription(e.target.value)} required sx={{ mb: 2 }} />
           <TextField label="Price per night ($)" type="number" fullWidth value={pricePerNight} onChange={(e) => setPricePerNight(e.target.value)} required slotProps={{ htmlInput: { min: 0 } }} sx={{ mb: 2 }} />
           <TextField label="Location" fullWidth value={location} onChange={(e) => setLocation(e.target.value)} required sx={{ mb: 2 }} />
-          <TextField label="Photo URLs (one per line)" fullWidth multiline rows={3} value={photos} onChange={(e) => setPhotos(e.target.value)} required placeholder="https://example.com/photo1.jpg" sx={{ mb: 2 }} />
-
-          <PhotoPreview urls={photoUrls} />
+          <PhotoUploader value={photos} onChange={setPhotos} label="Upload photos (mock upload, no platform)" />
 
           <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>Amenities</Typography>
           <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mb: 3 }}>

@@ -1,4 +1,4 @@
-import { User, Property, Booking, Review } from '../types';
+import { User, Property, Booking, Review, ContactRequest, Message, Notification } from '../types';
 
 const now = new Date().toISOString();
 
@@ -318,6 +318,31 @@ export const mockReviews: Review[] = [
   { id: 'r16', bookingId: 'b16', userId: '2', userName: 'Bob Patel', propertyId: '15', rating: 5, text: 'Houseboat experience was a dream. Gliding through the backwaters, eating fresh seafood on the deck - pure bliss. Highly recommend.', createdAt: '2025-08-25T00:00:00Z' },
   { id: 'r17', bookingId: 'b17', userId: '5', userName: 'Diana Gupta', propertyId: '18', rating: 5, text: 'Jodhpur fort view from the rooftop is spectacular. The haveli is beautifully restored. The heritage walk was informative and fun.', createdAt: '2025-08-10T00:00:00Z' },
   { id: 'r18', bookingId: 'b18', userId: '7', userName: 'Fiona Reddy', propertyId: '17', rating: 4, text: 'Great location for Bangalore business travel. Compact but has everything you need. The gym is well-equipped.', createdAt: '2025-07-30T00:00:00Z' },
+];
+
+export const mockContactRequests: ContactRequest[] = [
+  { id: 'cr1', propertyId: '1', propertyTitle: 'Seaside Villa with Private Pool', guestId: '2', guestName: 'Bob Patel', hostId: '1', hostName: 'Alice Sharma', status: 'approved', createdAt: '2026-07-01T10:00:00Z', updatedAt: '2026-07-01T12:00:00Z' },
+  { id: 'cr2', propertyId: '3', propertyTitle: 'Modern City Loft', guestId: '2', guestName: 'Bob Patel', hostId: '3', hostName: 'Carol Mehta', status: 'pending', message: 'Hi! I am interested in your loft for a weekend stay.', createdAt: '2026-08-20T09:00:00Z' },
+  { id: 'cr3', propertyId: '5', propertyTitle: 'Heritage Haveli Suite', guestId: '5', guestName: 'Diana Gupta', hostId: '1', hostName: 'Alice Sharma', status: 'approved', createdAt: '2026-02-01T00:00:00Z', updatedAt: '2026-02-01T14:00:00Z' },
+  { id: 'cr4', propertyId: '1', propertyTitle: 'Seaside Villa with Private Pool', guestId: '7', guestName: 'Fiona Reddy', hostId: '1', hostName: 'Alice Sharma', status: 'declined', createdAt: '2026-05-01T00:00:00Z', updatedAt: '2026-05-02T00:00:00Z' },
+  { id: 'cr5', propertyId: '7', propertyTitle: 'Luxury Penthouse Suite', guestId: '8', guestName: 'Guest Demo', hostId: '1', hostName: 'Alice Sharma', status: 'pending', message: 'Would love to experience the penthouse!', createdAt: '2026-07-28T08:00:00Z' },
+];
+
+export const mockMessages: Message[] = [
+  { id: 'm1', contactRequestId: 'cr1', senderId: '2', senderName: 'Bob Patel', text: 'Hi Alice! Is the villa available for August 15-20?', createdAt: '2026-07-01T10:00:00Z', readAt: '2026-07-01T11:30:00Z' },
+  { id: 'm2', contactRequestId: 'cr1', senderId: '1', senderName: 'Alice Sharma', text: 'Yes, those dates are free! Would love to host you.', createdAt: '2026-07-01T11:30:00Z', readAt: '2026-07-01T12:00:00Z' },
+  { id: 'm3', contactRequestId: 'cr1', senderId: '2', senderName: 'Bob Patel', text: 'Perfect! I just sent a booking request.', createdAt: '2026-07-01T12:00:00Z', readAt: '2026-07-01T13:00:00Z' },
+  { id: 'm4', contactRequestId: 'cr1', senderId: '1', senderName: 'Alice Sharma', text: 'Confirmed! See you in August. Let me know if you need airport pickup.', createdAt: '2026-07-01T13:00:00Z', readAt: '2026-07-01T13:05:00Z' },
+  { id: 'm5', contactRequestId: 'cr3', senderId: '5', senderName: 'Diana Gupta', text: 'Hi Alice! I am interested in the Heritage Haveli.', createdAt: '2026-02-01T10:00:00Z', readAt: '2026-02-01T14:00:00Z' },
+  { id: 'm6', contactRequestId: 'cr3', senderId: '1', senderName: 'Alice Sharma', text: 'Hello Diana! The Haveli is available. Let me know your dates!', createdAt: '2026-02-01T14:00:00Z', readAt: '2026-02-02T09:00:00Z' },
+  { id: 'm7', contactRequestId: 'cr3', senderId: '5', senderName: 'Diana Gupta', text: 'Looking at March 15-20. Is that good?', createdAt: '2026-02-02T09:00:00Z' },
+];
+
+export const mockNotifications: Notification[] = [
+  { id: 'n1', userId: '1', type: 'contact_request', referenceId: 'cr5', title: 'New Contact Request', message: 'Guest Demo wants to connect about "Luxury Penthouse Suite"', read: false, createdAt: '2026-07-28T08:00:00Z' },
+  { id: 'n2', userId: '3', type: 'contact_request', referenceId: 'cr2', title: 'New Contact Request', message: 'Bob Patel wants to connect about "Modern City Loft"', read: false, createdAt: '2026-08-20T09:00:00Z' },
+  { id: 'n3', userId: '1', type: 'message', referenceId: 'm4', title: 'New message from Bob Patel', message: 'Confirmed! See you in August...', read: true, createdAt: '2026-07-01T13:00:00Z' },
+  { id: 'n4', userId: '2', type: 'contact_request', referenceId: 'cr4', title: 'Contact Request Update', message: 'Your request about "Seaside Villa" was declined.', read: true, createdAt: '2026-05-02T00:00:00Z' },
 ];
 
 export const mockBookings: Booking[] = [
